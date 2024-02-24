@@ -1,0 +1,39 @@
+[project]
+name = "btrview"
+version = "0.1.0"
+description = "View btrfs snapshot trees"
+readme = "README.md"
+authors = [{name = "Chris Copley"}]
+license = {file = "LICENSE.md"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["btrfs"]
+requires-python = ">=3.11"
+dependencies = [
+	"treelib"
+]
+
+[project.scripts]
+btrview = "btrview.scripts.btrview:main"
+
+[build-system]
+requires      = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+tag_message = "{new_version}"
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+"btrview/__init__.py" = ["{version}"]
