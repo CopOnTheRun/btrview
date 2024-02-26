@@ -106,12 +106,14 @@ def pop_subvol(uuid: str, subvolumes: list[Subvolume]) -> Subvolume | None:
         if subvolume["UUID"] == uuid:
             subvolumes.remove(subvolume)
             return subvolume
+    return None
 
 def node_in_forest(subvol_uuid: str, trees:list[Tree]) -> Tree | None:
     """Returns the tree the subvolume UUID is in, if there is one."""
     for tree in trees:
         if subvol_uuid in tree:
             return tree
+    return None
 
 def get_tree(subvol_uuid: str, subvolumes: list[Subvolume], trees: list[Tree]) -> Tree:
     """Adds the node corresponding the the subvolume UUID to the tree. If the tree

@@ -82,6 +82,7 @@ class Subvolume():
                 return root
         except NotASubvolumeError:
             pass
+        return None
 
     def parent_subvol(self) -> Self | None:
         """Returns an instance of the parent subvolume if it exists."""
@@ -91,6 +92,7 @@ class Subvolume():
             return type(self)(self.path, root_id=self["Parent ID"])
         except NotASubvolumeError:
             pass
+        return None
 
     def __getitem__(self, key: str) -> str:
         return self.props[key]
