@@ -38,27 +38,13 @@ class Subvolume():
         """Creates btrfs prop dict based on the output of 
         btrfs subvolume show."""
         subvol: dict[str,str] = {}
-        lines = iter(btrfs_show_text.splitlines())
-        line = next(lines)
-        while True:
-            try:
-                if re.search(r":\s+",line):
-                    k,v = line.split(":",maxsplit=1)
-                    k = k.strip()
-                    v = v.strip()
-                    v = "" if v == "-" else v
-                    subvol[k] = v
-                elif "Snapshot(s):" in line:
-                    snapshots = []
-                    line = next(lines)
-                    while "Quota group:" not in line:
-                        snapshots.append(line.strip())
-                        line = next(lines)
-                    subvol["Snapshot(s)"] = snapshots
-                    continue
-                line = next(lines)
-            except StopIteration:
-                break
+        for line in btrfs_show_text.splitlines():
+            if re.search(r":\s+",line):
+                k,v = line.split(":",maxsplit=1)
+                k = k.strip()
+                v = v.strip()
+                v = "" if v == "-" else v
+                subvol[k] = v
         return subvol
 
     @staticmethod
