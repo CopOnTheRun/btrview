@@ -20,7 +20,6 @@ def run(command: str, **kwargs) -> subprocess.CompletedProcess[str]:
         out = subprocess.run(tokens, check=True, capture_output=True, 
                              text=True, **kwargs)
     except subprocess.CalledProcessError as e:
-        print(e.stderr)
         raise e
     return out
 
