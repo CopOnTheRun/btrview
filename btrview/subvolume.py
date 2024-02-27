@@ -1,10 +1,9 @@
 """Subvolume Classes and errors."""
 import subprocess
 import re
-from pathlib import Path, PurePath
+from pathlib import Path
 from datetime import datetime
 from typing import Self
-from dataclasses import dataclass
 
 from btrview.utils import get_UUIDs, run
 
