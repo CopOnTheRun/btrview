@@ -86,7 +86,7 @@ class Btrfs:
         for uuid in fs_uuids:
             subvol = Subvolume(mount_point,uuid)
             subvols.append(subvol)
-        root_subvol = Subvolume(mount_point,root_id="0")
+        root_subvol = Subvolume(mount_point,root_id="5")
         if root_subvol not in subvols:
             subvols.append(root_subvol)
         return subvols
