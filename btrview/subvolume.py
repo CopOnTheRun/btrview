@@ -53,32 +53,6 @@ class Subvolume():
         response = run(f"btrfs filesystem usage '{path}'")
         return response.returncode == 0
 
-    def snapshot_parent(self) -> Self | None:
-        """Returns an instance of the parent snapshot if it exists."""
-        if not self["Parent UUID"]:
-            return None
-        try:
-            return type(self)(self.path, uuid=self["Parent UUID"])
-        except NotASubvolumeError:
-            pass
-        try:
-            root = type(self)(self.path, root_id="5")
-            if root["UUID"] == self["Parent UUID"]:
-                return root
-        except NotASubvolumeError:
-            pass
-        return None
-
-    def parent_subvol(self) -> Self | None:
-        """Returns an instance of the parent subvolume if it exists."""
-        if self["Parent ID"] == "0":
-            return None
-        try:
-            return type(self)(self.path, root_id=self["Parent ID"])
-        except NotASubvolumeError:
-            pass
-        return None
-
     def __getitem__(self, key: str) -> str:
         return self.props[key]
 
