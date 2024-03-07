@@ -19,7 +19,7 @@ class Subvolume():
         the subvolume instance. Not the path doesn't actually have to 
         be a direct path to the subvolume, since it's possible these
         subvolumes won't be accessible on the filesystem.."""
-        self.path = path
+        self.path = Path(path)
 
         if uuid:
             cmd = f"btrfs subvolume show -u {uuid} {path}"
