@@ -73,7 +73,18 @@ class Btrfs:
                 filesystems.append(fs)
         return filesystems
 
-    def subvolumes(self) -> list[Subvolume]:
+    @classmethod
+    def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
+        """Returns a list of deleted subvolumes"""
+        uuids = {s["UUID"] for s in subvols}
+        puuids = set()
+        for subvol in subvols:
+            puuid = subvol["Parent UUID"]
+            if puuid and (puuid not in uuids):
+                puuids.add(puuid)
+        return [Subvolume({"UUID":puuid}, deleted=True) for puuid in puuids]
+            
+    def subvolumes(self, root: bool = True, deleted: bool = False) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
         out = run(f"btrfs subvolume list -u {mount_point}")
@@ -84,11 +95,13 @@ class Btrfs:
             if match:
                 fs_uuids.append(match.group(1))
         for uuid in fs_uuids:
-            subvol = Subvolume(mount_point,uuid)
+            subvol = Subvolume.from_UUID(uuid,mount_point)
             subvols.append(subvol)
-        root_subvol = Subvolume(mount_point,root_id="5")
-        if root_subvol not in subvols:
+        if root:
+            root_subvol = Subvolume.from_ID("5",mount_point)
             subvols.append(root_subvol)
+        if deleted:
+            subvols.extend(self._get_deleted_subvols(subvols))
         return subvols
 
     def snapshot_forest(self) -> list[Tree]:
