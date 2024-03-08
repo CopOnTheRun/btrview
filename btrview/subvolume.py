@@ -116,7 +116,9 @@ class MountedSubvolume(Subvolume):
             print(e)
         return type(self).from_path(path / self.path.name)
 
-    def delete(self) -> None:
+    def delete(self) -> Subvolume:
         """Deletes the subvolume"""
         run(f"btrfs subvolume delete '{self}'")
+        props = {"UUID":self["UUID"]}
+        return Subvolume(props,deleted=True)
 
