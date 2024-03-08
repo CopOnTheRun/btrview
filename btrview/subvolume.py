@@ -10,40 +10,47 @@ from btrview.utils import get_UUIDs, run
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
 
-class Subvolume():
-    """Class representing a BTRFS subvolume"""
-    def __init__(self, path: str | Path, 
-                 uuid: str| None = None,
-                 root_id: str | None = None):
-        """Takes a path and optional uuid, or root_id to initialize
-        the subvolume instance. Not the path doesn't actually have to 
-        be a direct path to the subvolume, since it's possible these
-        subvolumes won't be accessible on the filesystem.."""
-        self.path = Path(path)
+class Subvolume:
+    """Class representing a btrfs subvolume"""
+    def __init__(self, props: dict, deleted: bool = False) -> None:
+        self.props = props
+        self.deleted = deleted
 
-        if uuid:
-            cmd = f"btrfs subvolume show -u {uuid} {path}"
-        elif root_id:
-            cmd = f"btrfs subvolume show -r {root_id} {path}"
-        else:
-            cmd = f"btrfs subvolume show {path}"
+    @classmethod
+    def from_UUID(cls, uuid: str, path: str | Path) -> Self:
+        """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
+        cmd = f"btrfs subvolume show -u {uuid} {path}"
+        props = cls._run_cmd(cmd)
+        return cls(props)
 
-        try:
-            out = run(cmd)
-        except Exception:
+    @classmethod
+    def from_ID(cls, ID: str, path: str | Path) -> Self:
+        """Creates subvolume from subvolume's ID and any path on the filesystem"""
+        cmd = f"btrfs subvolume show -r {ID} {path}"
+        props = cls._run_cmd(cmd)
+        return cls(props)
+
+    @classmethod
+    def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
+        """Runs the shell command and returns the prop dictionary
+        if the command doesn't error"""
+        out = run(cmd)
+        if out.returncode != 0:
             raise NotASubvolumeError
-        self.props = self._get_props(out.stdout)
+        props = cls._get_props(out.stdout)
+        return props
 
-    def _get_props(self, btrfs_show_text: str) -> dict[str,str]:
+    @classmethod
+    def _get_props(cls, btrfs_show_text: str) -> dict[str, str | None]:
         """Creates btrfs prop dict based on the output of 
         btrfs subvolume show."""
-        subvol: dict[str,str] = {}
+        subvol = {}
         for line in btrfs_show_text.splitlines():
             if re.search(r":\s+",line):
                 k,v = line.split(":",maxsplit=1)
                 k = k.strip()
                 v = v.strip()
-                v = "" if v == "-" else v
+                v = None if v == "-" else v
                 subvol[k] = v
         return subvol
 
@@ -53,11 +60,13 @@ class Subvolume():
         response = run(f"btrfs filesystem usage '{path}'")
         return response.returncode == 0
 
-    def __getitem__(self, key: str) -> str:
-        return self.props[key]
+    def __getitem__(self, key: str) -> str | None:
+        """Returns the item from the props dictionary, but instead
+        of throwing a key error, returns None"""
+        return self.props.get(key)
 
     def __str__(self) -> str:
-        return str(self["Name"])
+        return self["Name"] or str(self["UUID"])
 
     def __hash__(self):
         return hash(self["UUID"])
@@ -68,22 +77,16 @@ class Subvolume():
 class MountedSubvolume(Subvolume):
     """Class representing a mounted subvolume. Differs from a normal Subvolume
     in that it can be snapshotted and sent since there's a path to it."""
-    def __init__(self, path: str|Path, 
-                 uuid: str | None = None,
-                 root_id: str | None = None):
-        """Initialised with a path, and optionally a UUID or root id. The path
-        here MUST be the path to the subvolume."""
-        self.path = Path(path)
-        if uuid:
-            cmd = f"btrfs subvolume show -u {uuid} {path}"
-        elif root_id:
-            cmd = f"btrfs subvolume show -r {root_id} {path}"
-        else:
-            cmd = f"btrfs subvolume show {path}"
-        out = run(cmd)
-        if out.returncode != 0:
-            raise NotASubvolumeError
-        self.props = self._get_props(out.stdout)
+    def __init__(self, props: dict[str, str| None], path: Path):
+        self.props = props
+        self.path = path
+
+    @classmethod
+    def from_path(cls, path: str | Path) -> Self:
+        cmd = f"btrfs subvolume show {path}"
+        props = cls._run_cmd(cmd)
+        path = Path(path)
+        return cls(props, path)
 
     def same_mount(self, path: Path) -> bool:
         """Returns true if a subvolume is on the same filesystem as a specified path"""
@@ -99,7 +102,7 @@ class MountedSubvolume(Subvolume):
             timestamp = datetime.now().astimezone().isoformat()
         snap_file = snap_dir / timestamp
         out = run(f"btrfs subvolume snapshot -r '{self.path}' '{snap_file}'")
-        return type(self)(snap_file)
+        return type(self).from_path(snap_file)
 
     def send(self, path: Path) -> Self:
         """Sends the subvolume to another filesystem"""
@@ -111,7 +114,7 @@ class MountedSubvolume(Subvolume):
         except Exception as e:
             run(f"btrfs subvolume delete '{path}'")
             print(e)
-        return type(self)(path / self.path.name)
+        return type(self).from_path(path / self.path.name)
 
     def delete(self) -> None:
         """Deletes the subvolume"""
