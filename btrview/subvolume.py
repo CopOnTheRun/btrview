@@ -12,7 +12,7 @@ class NotASubvolumeError(NotADirectoryError):
 
 class Subvolume:
     """Class representing a btrfs subvolume"""
-    def __init__(self, props: dict, deleted: bool = False) -> None:
+    def __init__(self, props: dict[str,str|None], deleted: bool = False) -> None:
         self.props = props
         self.deleted = deleted
 
