@@ -113,14 +113,14 @@ class Btrfs:
         uuid = f"UUID: {self.uuid}"
         return f"{label}\n{uuid}"
 
-def get_subvol(uuid: str, subvolumes: list[Subvolume]) -> Subvolume | None:
+def subvol_in_list(uuid: str, subvolumes: list[Subvolume]) -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
     for subvolume in subvolumes:
         if subvolume["UUID"] == uuid:
             return subvolume
     return None
 
-def node_in_forest(subvol_uuid: str, trees:list[Tree]) -> Tree | None:
+def subvol_in_forest(subvol_uuid: str, trees:list[Tree]) -> Tree | None:
     """Returns the tree the subvolume UUID is in, if there is one."""
     for tree in trees:
         if subvol_uuid in tree:
@@ -133,18 +133,16 @@ def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree]) 
     subvolumes.remove(subvol)
     puuid = subvol["Parent UUID"] or ""
     name = str(subvol)
-    if tree := node_in_forest(puuid, trees):
+    if tree := subvol_in_forest(puuid, trees):
         tree.create_node(name, subvol["UUID"], puuid, data=subvol)
-        return tree
-    elif parent := get_subvol(puuid, subvolumes):
+    elif parent := subvol_in_list(puuid, subvolumes):
         tree = get_tree(parent, subvolumes, trees)
         tree.create_node(name, subvol["UUID"], puuid, data=subvol)
-        return tree
     else:
-        new_tree = Tree()
-        new_tree.create_node(name, subvol["UUID"], data=subvol)
-        trees.append(new_tree)
-        return new_tree
+        tree = Tree()
+        trees.append(tree)
+        tree.create_node(name, subvol["UUID"], data=subvol)
+    return tree
 
 def get_forest(subvolumes: list[Subvolume]):
     """Turns a flat list of subvolumes into a forest of trees."""
