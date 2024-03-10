@@ -113,11 +113,10 @@ class Btrfs:
         uuid = f"UUID: {self.uuid}"
         return f"{label}\n{uuid}"
 
-def pop_subvol(uuid: str, subvolumes: list[Subvolume]) -> Subvolume | None:
-    """Removes a subvolume from a list and returns it"""
+def get_subvol(uuid: str, subvolumes: list[Subvolume]) -> Subvolume | None:
+    """Returns a subvolume from a list if there, else returns None."""
     for subvolume in subvolumes:
         if subvolume["UUID"] == uuid:
-            subvolumes.remove(subvolume)
             return subvolume
     return None
 
@@ -128,18 +127,22 @@ def node_in_forest(subvol_uuid: str, trees:list[Tree]) -> Tree | None:
             return tree
     return None
 
-def get_tree(subvol_uuid: str, subvolumes: list[Subvolume], trees: list[Tree]) -> Tree:
+def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree]) -> Tree:
     """Adds the node corresponding the the subvolume UUID to the tree. If the tree
     doesn't exist, it will recursively find the root and add all corresponding nodes."""
-    subvol = pop_subvol(subvol_uuid,subvolumes)
-    if subvol and (parent := subvol["Parent UUID"]):
-        tree = node_in_forest(parent,trees) or get_tree(parent,subvolumes,trees)
-        tree.create_node(subvol["Name"],subvol["UUID"],parent,data=subvol)
+    subvolumes.remove(subvol)
+    puuid = subvol["Parent UUID"] or ""
+    name = str(subvol)
+    if tree := node_in_forest(puuid, trees):
+        tree.create_node(name, subvol["UUID"], puuid, data=subvol)
+        return tree
+    elif parent := get_subvol(puuid, subvolumes):
+        tree = get_tree(parent, subvolumes, trees)
+        tree.create_node(name, subvol["UUID"], puuid, data=subvol)
         return tree
     else:
         new_tree = Tree()
-        name = subvol["Name"] if subvol else subvol_uuid
-        new_tree.create_node(name,subvol_uuid)
+        new_tree.create_node(name, subvol["UUID"], data=subvol)
         trees.append(new_tree)
         return new_tree
 
@@ -148,5 +151,5 @@ def get_forest(subvolumes: list[Subvolume]):
     trees: list[Tree] = []
     while subvolumes:
         subvol = subvolumes[0]
-        get_tree(subvol["UUID"],subvolumes,trees)
+        get_tree(subvol, subvolumes, trees)
     return trees
