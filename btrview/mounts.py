@@ -84,7 +84,7 @@ class Btrfs:
                 puuids.add(puuid)
         return [Subvolume({"UUID":puuid}, deleted=True) for puuid in puuids]
             
-    def subvolumes(self, root: bool = True, deleted: bool = False) -> list[Subvolume]:
+    def subvolumes(self, root: bool, deleted: bool) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
         out = run(f"btrfs subvolume list -u {mount_point}")
@@ -104,10 +104,10 @@ class Btrfs:
             subvols.extend(self._get_deleted_subvols(subvols))
         return subvols
 
-    def forest(self, snapshots = False) -> list[Tree]:
+    def forest(self, snapshots = False, root = True, deleted = False) -> list[Tree]:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
-        return get_forest(self.subvolumes(), snapshots)
+        return get_forest(self.subvolumes(root, deleted), snapshots)
         
     def __str__(self) -> str:
         label =  f"Label: {self.label}"
