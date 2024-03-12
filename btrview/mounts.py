@@ -107,17 +107,18 @@ class Btrfs:
     def forest(self, snapshots = False, root = True, deleted = False) -> list[Tree]:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
-        return get_forest(self.subvolumes(root, deleted), snapshots)
+        kind = "snap" if snapshots else "subvol"
+        return get_forest(self.subvolumes(root, deleted), kind)
         
     def __str__(self) -> str:
         label =  f"Label: {self.label}"
         uuid = f"UUID: {self.uuid}"
         return f"{label}\n{uuid}"
 
-def subvol_in_list(ID: str, subvolumes: list[Subvolume], snapshots = False) -> Subvolume | None:
+def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
     key = "Subvolume ID"
-    if snapshots:
+    if kind == "snap":
         key = "UUID"
     for subvolume in subvolumes:
         if subvolume[key] == ID:
@@ -131,32 +132,28 @@ def subvol_in_forest(ID: str, trees:list[Tree]) -> Tree | None:
             return tree
     return None
 
-def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], snapshots = False) -> Tree:
+def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], kind: str = "subvol") -> Tree:
     """Adds the node corresponding the the subvolume UUID/ID to the tree. If the tree
     doesn't exist, it will recursively find the root and add all corresponding nodes."""
-    key = "Subvolume ID"
-    p_key = "Parent ID"
-    if snapshots:
-        key = "UUID"
-        p_key = "Parent UUID"
     subvolumes.remove(subvol)
-    puuid = subvol[p_key] or ""
+    subvol_id = subvol.id(kind) or ""
+    parent_id = subvol.parent(kind) or ""
     name = str(subvol)
-    if tree := subvol_in_forest(puuid, trees):
-        tree.create_node(name, subvol[key], puuid, data=subvol)
-    elif parent := subvol_in_list(puuid, subvolumes, snapshots):
-        tree = get_tree(parent, subvolumes, trees, snapshots)
-        tree.create_node(name, subvol[key], puuid, data=subvol)
+    if tree := subvol_in_forest(parent_id, trees):
+        tree.create_node(name, subvol_id, parent_id, data=subvol)
+    elif parent := subvol_in_list(parent_id, subvolumes, kind):
+        tree = get_tree(parent, subvolumes, trees, kind)
+        tree.create_node(name, subvol_id, parent_id, data=subvol)
     else:
         tree = Tree()
         trees.append(tree)
-        tree.create_node(name, subvol[key], data=subvol)
+        tree.create_node(name, subvol_id, data=subvol)
     return tree
 
-def get_forest(subvolumes: list[Subvolume], snapshots = False):
+def get_forest(subvolumes: list[Subvolume], kind = "subvol"):
     """Turns a flat list of subvolumes into a forest of trees."""
     trees: list[Tree] = []
     while subvolumes:
         subvol = subvolumes[0]
-        get_tree(subvol, subvolumes, trees, snapshots)
+        get_tree(subvol, subvolumes, trees, kind)
     return trees

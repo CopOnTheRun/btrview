@@ -16,6 +16,28 @@ class Subvolume:
         self.props = props
         self.deleted = deleted
 
+    def parent(self, p_type: str) -> str | None:
+        """Returns parent UUID or ID string"""
+        match p_type:
+            case "snap":
+                parent = self["Recieved UUID"] or self["Parent UUID"]
+            case "subvol":
+                parent = self["Parent ID"]
+            case _:
+                parent = None
+        return parent
+
+    def id(self, p_type: str) -> str | None:
+        """Returns subvolume UUID or ID string"""
+        match p_type:
+            case "snap":
+                ID = self["UUID"]
+            case "subvol":
+                ID = self["Subvolume ID"]
+            case _:
+                ID = None
+        return ID
+
     @classmethod
     def from_UUID(cls, uuid: str, path: str | Path) -> Self:
         """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
