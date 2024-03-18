@@ -108,6 +108,8 @@ class Btrfs:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
         kind = "snap" if snapshots else "subvol"
+        if kind == "subvol":
+            deleted = False
         return get_forest(self.subvolumes(root, deleted), kind)
         
     def __str__(self) -> str:
