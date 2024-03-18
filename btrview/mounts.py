@@ -117,11 +117,8 @@ class Btrfs:
 
 def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
-    key = "Subvolume ID"
-    if kind == "snap":
-        key = "UUID"
     for subvolume in subvolumes:
-        if subvolume[key] == ID:
+        if subvolume.id(kind) == ID:
             return subvolume
     return None
 
