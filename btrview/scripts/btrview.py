@@ -3,13 +3,16 @@
 import argparse
 import textwrap
 
+import btrview
 from btrview.utils import check_root
 from btrview.mounts import Btrfs
+
 
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""
     arg_parser = argparse.ArgumentParser(
-            description = "Better way to view btrfs filesystems.")
+            description = "Better way to view btrfs filesystems.",
+            epilog = f"btrview version {btrview.__version__}, created by Chris Copley")
 
     arg_parser.add_argument(
             "label",
