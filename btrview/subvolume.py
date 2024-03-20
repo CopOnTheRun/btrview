@@ -90,16 +90,16 @@ class Subvolume:
     def __str__(self) -> str:
         return self["Name"] or str(self["UUID"])
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self["UUID"])
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self["UUID"] == other["UUID"]
 
 class MountedSubvolume(Subvolume):
     """Class representing a mounted subvolume. Differs from a normal Subvolume
     in that it can be snapshotted and sent since there's a path to it."""
-    def __init__(self, props: dict[str, str| None], path: Path):
+    def __init__(self, props: dict[str, str| None], path: Path) -> None:
         self.props = props
         self.path = path
 

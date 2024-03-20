@@ -25,7 +25,7 @@ class Mount:
         new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
         return Path(new_path)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.fsroot} on {self.target}"
 
 class Btrfs:
@@ -33,14 +33,14 @@ class Btrfs:
     _UUIDs:  dict[str,str] = dict()
     _all_mounts: defaultdict[str,set[Mount]] = defaultdict(set)
 
-    def __init__(self, uuid: str, label: str|None = None):
+    def __init__(self, uuid: str, label: str|None = None) -> None:
         """Initialist with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
         self.label = label
         self._get_mounts()
 
     @classmethod
-    def _get_mounts(cls):
+    def _get_mounts(cls) -> None:
         """Generates all the mount points for each filesystem"""
         headings = "label,uuid,fsroot,target"
         #Why parse all mounts instead of just one using the --source flag?
@@ -149,7 +149,7 @@ def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], 
         tree.create_node(name, subvol_id, data=subvol)
     return tree
 
-def get_forest(subvolumes: list[Subvolume], kind = "subvol"):
+def get_forest(subvolumes: list[Subvolume], kind = "subvol") -> list[Tree]:
     """Turns a flat list of subvolumes into a forest of trees."""
     trees: list[Tree] = []
     while subvolumes:
