@@ -67,7 +67,9 @@ class Subvolume:
         """Creates btrfs prop dict based on the output of 
         btrfs subvolume show."""
         subvol = {}
-        for line in btrfs_show_text.splitlines():
+        lines = btrfs_show_text.splitlines()
+        subvol["btrfs Path"] = "/" + lines[0]
+        for line in lines[1:]:
             if re.search(r":\s+",line):
                 k,v = line.split(":",maxsplit=1)
                 k = k.strip()
