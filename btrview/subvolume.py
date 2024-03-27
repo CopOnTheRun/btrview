@@ -30,9 +30,18 @@ class Mount:
 
 class Subvolume:
     """Class representing a btrfs subvolume"""
-    def __init__(self, props: dict[str,str|None], deleted: bool = False) -> None:
+    def __init__(self, props: dict[str,str|None], mounts: tuple[Mount, ...],
+                 deleted: bool = False,) -> None:
         self.props = props
+        self.mounts = mounts
         self.deleted = deleted
+
+    @property
+    def paths(self) -> list[Path]:
+        if not self["btrfs Path"]:
+            return []
+        btr_path = Path(self["btrfs Path"])
+        return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
 
     def parent(self, p_type: str) -> str | None:
         """Returns parent UUID or ID string"""
@@ -57,18 +66,18 @@ class Subvolume:
         return ID
 
     @classmethod
-    def from_UUID(cls, uuid: str, path: str | Path) -> Self:
+    def from_UUID(cls, uuid: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -u {uuid} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props)
+        return cls(props, mounts)
 
     @classmethod
-    def from_ID(cls, ID: str, path: str | Path) -> Self:
+    def from_ID(cls, ID: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -r {ID} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props)
+        return cls(props, mounts)
 
     @classmethod
     def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
@@ -162,5 +171,5 @@ class MountedSubvolume(Subvolume):
         """Deletes the subvolume"""
         run(f"btrfs subvolume delete '{self}'")
         props = {"UUID":self["UUID"]}
-        return Subvolume(props,deleted=True)
+        return Subvolume(props, tuple(), deleted=True)
 

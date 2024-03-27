@@ -64,7 +64,7 @@ class Btrfs:
             puuid = subvol["Parent UUID"]
             if puuid and (puuid not in uuids):
                 puuids.add(puuid)
-        return [Subvolume({"UUID":puuid}, deleted=True) for puuid in puuids]
+        return [Subvolume({"UUID":puuid}, tuple(), deleted=True) for puuid in puuids]
             
     def subvolumes(self, root: bool, deleted: bool) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
@@ -77,10 +77,10 @@ class Btrfs:
             if match:
                 fs_uuids.append(match.group(1))
         for uuid in fs_uuids:
-            subvol = Subvolume.from_UUID(uuid,mount_point)
+            subvol = Subvolume.from_UUID(uuid, mount_point, self.mounts)
             subvols.append(subvol)
         if root:
-            root_subvol = Subvolume.from_ID("5",mount_point)
+            root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
             subvols.append(root_subvol)
         if deleted:
             subvols.extend(self._get_deleted_subvols(subvols))
