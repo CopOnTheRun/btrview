@@ -4,29 +4,11 @@ import re
 from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Self
-from dataclasses import dataclass
 
 from treelib import Tree
 
 from btrview.utils import run
-from btrview.subvolume import Subvolume
-
-@dataclass(frozen=True)
-class Mount:
-    """Basic class for working with mounted subvolumes."""
-    fsroot: PurePath
-    target: Path
-
-    def resolve(self, path: str) -> Path:
-        """Returns the resolved path of another path"""
-        fsroot_str = str(self.fsroot)
-        target_str = str(self.target)
-        path_str = str(path)
-        new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
-        return Path(new_path)
-
-    def __str__(self) -> str:
-        return f"{self.fsroot} on {self.target}"
+from btrview.subvolume import Subvolume, Mount
 
 class Btrfs:
     """A class representing a btrfs filesystem"""
