@@ -5,7 +5,7 @@ import textwrap
 
 import btrview
 from btrview.utils import check_root
-from btrview.mounts import Btrfs
+from btrview.btrfs import Btrfs
 
 
 def parser() -> argparse.ArgumentParser:
