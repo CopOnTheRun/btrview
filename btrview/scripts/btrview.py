@@ -7,7 +7,6 @@ import btrview
 from btrview.utils import check_root
 from btrview.btrfs import Btrfs
 
-
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""
     arg_parser = argparse.ArgumentParser(

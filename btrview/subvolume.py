@@ -21,6 +21,8 @@ class Mount:
         """Returns the resolved path of another path"""
         fsroot_str = str(self.fsroot)
         target_str = str(self.target)
+        if fsroot_str == "/":
+            target_str = target_str + "/"
         path_str = str(path)
         new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
         return Path(new_path)
@@ -95,7 +97,7 @@ class Subvolume:
         btrfs subvolume show."""
         subvol = {}
         lines = btrfs_show_text.splitlines()
-        subvol["btrfs Path"] = "/" + lines[0]
+        subvol["btrfs Path"] = ("/" + lines[0]).replace("//","/")
         for line in lines[1:]:
             if re.search(r":\s+",line):
                 k,v = line.split(":",maxsplit=1)
