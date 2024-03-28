@@ -14,9 +14,9 @@ def parser() -> argparse.ArgumentParser:
             epilog = f"btrview version {btrview.__version__}, created by Chris Copley")
 
     arg_parser.add_argument(
-            "label",
+            "--labels",
             help="The label of the filesystem to view",
-            nargs="*",)
+            nargs="+",)
 
     arg_parser.add_argument(
             "--snapshots",
@@ -53,7 +53,7 @@ def logic(labels: list[str], snapshots, root, deleted) -> None:
 
 def main():
     args = parser().parse_args()
-    logic(args.label, args.snapshots, not args.no_root, args.deleted)
+    logic(args.labels, args.snapshots, not args.no_root, args.deleted)
     
 if __name__ == "__main__":
     main()
