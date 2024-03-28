@@ -28,12 +28,12 @@ def parser() -> argparse.ArgumentParser:
             "--include",
             help = "Types of subvolumes to include in the tree",
             nargs = "*",
-            choices = ("root","deleted",),
-            default = ("root",))
+            choices = ("root","deleted","unreachable"),
+            default = ("root","unreachable"))
 
     return arg_parser
 
-def logic(labels: list[str], snapshots, root, deleted) -> None:
+def logic(labels: list[str], snapshots, root, deleted, unreachable) -> None:
     check_root()
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
@@ -43,12 +43,15 @@ def logic(labels: list[str], snapshots, root, deleted) -> None:
             print(f"  {mount}")
         heading = "Snapshots:" if snapshots else "Subvolumes:"
         print(heading)
-        for tree in fs.forest(snapshots, root, deleted):
+        for tree in fs.forest(snapshots, root, deleted, unreachable):
             print(textwrap.indent(str(tree).strip(),"  "))
 
 def main():
     args = parser().parse_args()
-    logic(args.labels, args.snapshots, "root" in args.include, "deleted" in args.include)
+    root = "root" in args.include
+    deleted = "deleted" in args.include
+    unreachable = "unreachable" in args.include
+    logic(args.labels, args.snapshots, root ,deleted, unreachable)
     
 if __name__ == "__main__":
     main()

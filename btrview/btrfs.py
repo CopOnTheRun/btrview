@@ -66,7 +66,7 @@ class Btrfs:
                 puuids.add(puuid)
         return [Subvolume({"UUID":puuid}, tuple(), deleted=True) for puuid in puuids]
             
-    def subvolumes(self, root: bool, deleted: bool) -> list[Subvolume]:
+    def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
         out = run(f"btrfs subvolume list -u {mount_point}")
@@ -79,20 +79,28 @@ class Btrfs:
         for uuid in fs_uuids:
             subvol = Subvolume.from_UUID(uuid, mount_point, self.mounts)
             subvols.append(subvol)
+        if deleted:
+            subvols.extend(self._get_deleted_subvols(subvols))
+        if not unreachable:
+            to_remove = []
+            for subvol in subvols:
+                if not subvol.paths:
+                    to_remove.append(subvol)
+            for subvol in to_remove:
+                subvols.remove(subvol)
+        #order matters here, root should override unreachable
         if root:
             root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
             subvols.append(root_subvol)
-        if deleted:
-            subvols.extend(self._get_deleted_subvols(subvols))
         return subvols
 
-    def forest(self, snapshots = False, root = True, deleted = False) -> list[Tree]:
+    def forest(self, snapshots = False, root = True, deleted = False, unreachable = True,) -> list[Tree]:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
         kind = "snap" if snapshots else "subvol"
         if kind == "subvol":
             deleted = False
-        return get_forest(self.subvolumes(root, deleted), kind)
+        return get_forest(self.subvolumes(root, deleted, unreachable), kind)
         
     def __str__(self) -> str:
         label =  f"Label: {self.label}"
