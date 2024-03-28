@@ -1,20 +1,49 @@
 """Subvolume Classes and errors."""
 import subprocess
 import re
-from pathlib import Path
+from pathlib import Path, PurePath
 from datetime import datetime
 from typing import Self
+from dataclasses import dataclass
 
 from btrview.utils import get_UUIDs, run
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
 
+@dataclass(frozen=True)
+class Mount:
+    """Basic class for working with mounted subvolumes."""
+    fsroot: PurePath
+    target: Path
+
+    def resolve(self, path: str) -> Path:
+        """Returns the resolved path of another path"""
+        fsroot_str = str(self.fsroot)
+        target_str = str(self.target)
+        if fsroot_str == "/":
+            target_str = target_str + "/"
+        path_str = str(path)
+        new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
+        return Path(new_path)
+
+    def __str__(self) -> str:
+        return f"{self.fsroot} on {self.target}"
+
 class Subvolume:
     """Class representing a btrfs subvolume"""
-    def __init__(self, props: dict[str,str|None], deleted: bool = False) -> None:
+    def __init__(self, props: dict[str,str|None], mounts: tuple[Mount, ...],
+                 deleted: bool = False,) -> None:
         self.props = props
+        self.mounts = mounts
         self.deleted = deleted
+
+    @property
+    def paths(self) -> list[Path]:
+        if not self["btrfs Path"]:
+            return []
+        btr_path = Path(self["btrfs Path"])
+        return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
 
     def parent(self, p_type: str) -> str | None:
         """Returns parent UUID or ID string"""
@@ -39,18 +68,18 @@ class Subvolume:
         return ID
 
     @classmethod
-    def from_UUID(cls, uuid: str, path: str | Path) -> Self:
+    def from_UUID(cls, uuid: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -u {uuid} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props)
+        return cls(props, mounts)
 
     @classmethod
-    def from_ID(cls, ID: str, path: str | Path) -> Self:
+    def from_ID(cls, ID: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -r {ID} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props)
+        return cls(props, mounts)
 
     @classmethod
     def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
@@ -67,7 +96,9 @@ class Subvolume:
         """Creates btrfs prop dict based on the output of 
         btrfs subvolume show."""
         subvol = {}
-        for line in btrfs_show_text.splitlines():
+        lines = btrfs_show_text.splitlines()
+        subvol["btrfs Path"] = ("/" + lines[0]).replace("//","/")
+        for line in lines[1:]:
             if re.search(r":\s+",line):
                 k,v = line.split(":",maxsplit=1)
                 k = k.strip()
@@ -142,5 +173,5 @@ class MountedSubvolume(Subvolume):
         """Deletes the subvolume"""
         run(f"btrfs subvolume delete '{self}'")
         props = {"UUID":self["UUID"]}
-        return Subvolume(props,deleted=True)
+        return Subvolume(props, tuple(), deleted=True)
 
