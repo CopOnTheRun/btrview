@@ -25,16 +25,11 @@ def parser() -> argparse.ArgumentParser:
             action = "store_true",)
 
     arg_parser.add_argument(
-            "--no-root",
-            help="Don't include the root subvolume",
-            default = False,
-            action = "store_true",)
-
-    arg_parser.add_argument(
-            "--deleted",
-            help="Whether to include deleted snapshots",
-            default = False,
-            action = "store_true",)
+            "--include",
+            help = "Types of subvolumes to include in the tree",
+            nargs = "*",
+            choices = ("root","deleted",),
+            default = ("root",))
 
     return arg_parser
 
@@ -53,7 +48,7 @@ def logic(labels: list[str], snapshots, root, deleted) -> None:
 
 def main():
     args = parser().parse_args()
-    logic(args.labels, args.snapshots, not args.no_root, args.deleted)
+    logic(args.labels, args.snapshots, "root" in args.include, "deleted" in args.include)
     
 if __name__ == "__main__":
     main()
