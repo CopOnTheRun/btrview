@@ -84,7 +84,7 @@ class Btrfs:
         if not unreachable:
             to_remove = []
             for subvol in subvols:
-                if not subvol.paths:
+                if not subvol.mounted:
                     to_remove.append(subvol)
             for subvol in to_remove:
                 subvols.remove(subvol)

@@ -45,6 +45,10 @@ class Subvolume:
         btr_path = Path(self["btrfs Path"])
         return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
 
+    @property
+    def mounted(self) -> bool:
+        return bool(self.paths)
+
     def parent(self, p_type: str) -> str | None:
         """Returns parent UUID or ID string"""
         match p_type:
