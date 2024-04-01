@@ -43,9 +43,6 @@ def logic(labels: list[str], snapshots, root, deleted, unreachable, props) -> No
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
         print(f"{fs}")
-        print("Mounts:")
-        for mount in sorted(fs.mounts, key=lambda fs: (fs.fsroot, fs.target)):
-            print(f"  {mount}")
         heading = "Snapshots:" if snapshots else "Subvolumes:"
         print(heading)
         for tree in fs.forest(snapshots, root, deleted, unreachable):

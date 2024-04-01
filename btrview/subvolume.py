@@ -49,6 +49,11 @@ class Subvolume:
     def mounted(self) -> bool:
         return bool(self.paths)
 
+    @property
+    def mount_points(self) -> tuple[Path, ...]:
+        targets = [mount.target for mount in self.mounts]
+        return tuple(path for path in self.paths if path in targets)
+
     def parent(self, p_type: str) -> str | None:
         """Returns parent UUID or ID string"""
         match p_type:
@@ -123,7 +128,11 @@ class Subvolume:
         return self.props.get(key)
 
     def __str__(self) -> str:
-        return self["Name"] or str(self["UUID"])
+        string = self["Name"] or str(self["UUID"])
+        if mps := self.mount_points:
+            mp_string = ", ".join(str(mp) for mp in mps)
+            string = f"{string} on: {mp_string}"
+        return string
 
     def __hash__(self) -> int:
         return hash(self["UUID"])
