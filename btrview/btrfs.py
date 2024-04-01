@@ -79,8 +79,6 @@ class Btrfs:
         for uuid in fs_uuids:
             subvol = Subvolume.from_UUID(uuid, mount_point, self.mounts)
             subvols.append(subvol)
-        if deleted:
-            subvols.extend(self._get_deleted_subvols(subvols))
         if not unreachable:
             to_remove = []
             for subvol in subvols:
@@ -92,6 +90,10 @@ class Btrfs:
         if root:
             root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
             subvols.append(root_subvol)
+        #but also deleted needs to go after root
+        #this is kinda fragile, plan to fix it soon™
+        if deleted:
+            subvols.extend(self._get_deleted_subvols(subvols))
         return subvols
 
     def forest(self, snapshots = False, root = True, deleted = False, unreachable = True,) -> list[Tree]:
