@@ -2,47 +2,39 @@
 
 ## Overview:
 
-Call btrview and a filesystem label (or multiple) to and get an overview of the subvolume layout for each filesystem called. 
+Call btrview with a label to get an overview of the subvolume and snapshot tree layout for that specified btrfs filesystem. Call it with multiple labels and it will list each filesystem specified. Call it with no labels, and it will give an overview of every btrfs filesystem it can find.
 
 ```
-> sudo btrview HDDs
+> sudo btrview --labels HDDs
 Label: HDDs
 UUID: 8ad35ea1-e26b-4b2b-aea6-6b13e2a5700d
-Mounts:
-  /Media on /srv/media
-  /Data on /srv/Data
-  /Snaps on /hdd-snaps
-Subvolumes:
-  <FS_TREE>
-  ├── Data
-  ├── Media
-  │   └── Pics
-  └── Snaps
-      ├── 2024-02-22T13:58:19.780684-05:00
-      ├── 2024-02-23T02:00:19.096959-05:00
-      └── 2024-02-23T11:21:54.155429-05:00
+Subvolumes:                                       Snapshots:
+  <FS_TREE>                                         Media on: /srv/media
+  ├── Data on: /srv/Data                            Snaps on: /hdd-snaps
+  ├── Media on: /srv/media                          2022-06-19T17:43:59.743597-04:00
+  │   ├── 2024-02-01T02:00:13.760115-05:00          ├── 2022-05-13T01:49:30.487324-04:00
+  │   └── Pics on: /Snaps/Testy                     │   └── 2022-05-03T23:01:29.136711-04:00
+  │       └── SubVolume                             ├── 2022-06-01 15:35:50-04:00
+  ├── Snaps on: /hdd-snaps                          └── 2022-06-20T15:33:57.263901-04:00
+  │   ├── 2022-05-03T23:01:29.136711-04:00          Data on: /srv/Data
+  │   ├── 2022-05-13T01:49:30.487324-04:00          ├── 2024-02-20T02:00:09.667556-05:00
+  │   ├── 2022-06-01 15:35:50-04:00                 ├── 2024-02-21T02:00:04.595496-05:00
+  │   ├── 2022-06-19T17:43:59.743597-04:00          ├── 2024-02-22T12:12:06.083575-05:00
+  │   ├── 2022-06-20T15:33:57.263901-04:00          ├── 2024-02-22T12:46:11.076236-05:00
+  │   ├── 2024-02-02T13:30:19.170363-05:00          ├── 2024-02-22T13:53:21.336905-05:00
+  │   ├── 2024-02-20T02:00:09.667556-05:00          ├── 2024-02-22T13:57:28.944888-05:00
+  │   ├── 2024-02-21T02:00:04.595496-05:00          ├── 2024-02-22T13:58:19.780684-05:00
+  │   ├── 2024-02-22T12:12:06.083575-05:00          ├── 2024-02-23T02:00:19.096959-05:00
+  │   ├── 2024-02-22T12:46:11.076236-05:00          └── 2024-02-23T11:21:54.155429-05:00
+  │   ├── 2024-02-22T13:53:21.336905-05:00          2024-02-02T13:30:19.170363-05:00
+  │   ├── 2024-02-22T13:57:28.944888-05:00          Pics on: /Snaps/Testy
+  │   ├── 2024-02-22T13:58:19.780684-05:00          2024-02-01T02:00:13.760115-05:00
+  │   ├── 2024-02-23T02:00:19.096959-05:00          SubVolume
+  │   └── 2024-02-23T11:21:54.155429-05:00          subvolume-test
+  └── subvolume-test                                <FS_TREE>
 ```
 
-Call btrview with the `--snapshot` flag and you'll get the snapshot layout instead. [Wondering what the difference is?](#q-whats-the-difference-between-the-subvolume-tree-and-the-snapshot-tree)
-
-```
-sudo btrview HDDs --snapshot
-Label: HDDs
-UUID: 8ad35ea1-e26b-4b2b-aea6-6b13e2a5700d
-Mounts:
-  /Media on /srv/media
-  /Data on /srv/Data
-  /Snaps on /hdd-snaps
-Snapshots:
-  Media
-  Snaps
-  Data
-  ├── 2024-02-22T13:58:19.780684-05:00
-  ├── 2024-02-23T02:00:19.096959-05:00
-  └── 2024-02-23T11:21:54.155429-05:00
-  Pics
-  <FS_TREE>
-```
+Wondering what the difference between the subvolume and snapshot tree is? [Check out the FAQ](#q-whats-the-difference-between-the-subvolume-tree-and-the-snapshot-tree)!
 
 ## Installation:
 
@@ -98,11 +90,15 @@ nested_subvol
 
 ### Q: What's the point of this program?
 
-It can be nice to know which subvolumes have snapshots and how many. Even if your snapshots are scattered around a messy filesystem they'll all still show up as a nice little tree.
+The main thing btrview accomplishes is providing an organized overview of a (or multiple) btrfs filesystem(s). Due to the fact btrfs relies only on loose conventions to determine where snapshots are stored, and how subvolumes are organized, it can be difficult to gain an understanding of how things are laid out. With btrview it's easy to know which subvolumes have snapshots, how many, and where they're stored. Even if your snapshots and subvolumes are scattered around a messy filesystem they'll all still show up as a nice little tree.
 
 ### Q: What's not the point of this program?
 
-This is in no way shape or form a backup solution. Use something like [btrbk](https://github.com/digint/btrbk) for that. btrview just shows the state of things as they are, it doesn't actually "do" anything.
+This is in no way shape or form a backup solution. Use something like [btrbk](https://github.com/digint/btrbk) for that. 
+
+This is also not a snapshot diff viewer. If that sounds like something you're interested in check out [httm](https://github.com/kimono-koans/httm).
+
+To put it plainly, btrview merely shows the state of things as they are, it doesn't actually "do" anything.
 
 ### Q: How is the "btr" part of btrview pronounced?
 
