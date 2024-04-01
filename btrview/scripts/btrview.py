@@ -2,6 +2,7 @@
 
 import argparse
 import textwrap
+from itertools import zip_longest
 
 import btrview
 from btrview.utils import check_root
@@ -19,12 +20,6 @@ def parser() -> argparse.ArgumentParser:
             nargs="+",)
 
     arg_parser.add_argument(
-            "--snapshots",
-            help="Whether to show snapshots",
-            default = False,
-            action = "store_true",)
-
-    arg_parser.add_argument(
             "--include",
             help = "Types of subvolumes to include in the tree",
             nargs = "*",
@@ -38,25 +33,36 @@ def parser() -> argparse.ArgumentParser:
 
     return arg_parser
 
-def logic(labels: list[str], snapshots, root, deleted, unreachable, props) -> None:
+def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     check_root()
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
         print(f"{fs}")
-        heading = "Snapshots:" if snapshots else "Subvolumes:"
-        print(heading)
-        for tree in fs.forest(snapshots, root, deleted, unreachable):
-            #stdout=False is only needed because of bug
-            #see https://github.com/caesar0301/treelib/issues/221
-            tree = tree.show(data_property=props, stdout=False).strip()
-            print(textwrap.indent(tree,"  "))
+        subvol_tree = fs.forest(False, root, deleted, unreachable)
+        subvol_str = get_forest_string(subvol_tree, False, prop)
+
+        snap_tree = fs.forest(True, root, deleted, unreachable)
+        snap_str = get_forest_string(snap_tree, True, prop)
+
+        zipper = zip_longest(subvol_str.splitlines(),snap_str.splitlines(),fillvalue="")
+        for subvol_line, snap_line in zipper:
+            print(f"{subvol_line:<50}{snap_line:}")
+
+def get_forest_string(forest, snapshot: bool = False, prop: str = ""):
+    forest_str = "Snapshots: \n" if snapshot else "Subvolumes: \n"
+    for tree in forest:
+        #stdout=False is only needed because of bug
+        #see https://github.com/caesar0301/treelib/issues/221
+        tree_str = tree.show(data_property=prop, stdout=False)
+        forest_str += textwrap.indent(str(tree_str), "  ")
+    return forest_str
 
 def main():
     args = parser().parse_args()
     root = "root" in args.include
     deleted = "deleted" in args.include
     unreachable = "unreachable" in args.include
-    logic(args.labels, args.snapshots, root ,deleted, unreachable, args.property)
+    logic(args.labels, root ,deleted, unreachable, args.property)
     
 if __name__ == "__main__":
     main()
