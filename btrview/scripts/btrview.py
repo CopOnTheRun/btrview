@@ -39,17 +39,17 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     for fs in filesystems:
         print(f"{fs}")
         subvol_tree = fs.forest(False, root, deleted, unreachable)
-        subvol_str = get_forest_string(subvol_tree, False, prop)
+        subvol_str = get_forest_string(subvol_tree, "Subvolumes", prop)
 
         snap_tree = fs.forest(True, root, deleted, unreachable)
-        snap_str = get_forest_string(snap_tree, True, prop)
+        snap_str = get_forest_string(snap_tree, "Snapshots", prop)
 
         zipper = zip_longest(subvol_str.splitlines(),snap_str.splitlines(),fillvalue="")
         for subvol_line, snap_line in zipper:
             print(f"{subvol_line:<50}{snap_line:}")
 
-def get_forest_string(forest, snapshot: bool = False, prop: str = ""):
-    forest_str = "Snapshots: \n" if snapshot else "Subvolumes: \n"
+def get_forest_string(forest, header, prop: str = ""):
+    forest_str = f"{header}:\n"
     for tree in forest:
         #stdout=False is only needed because of bug
         #see https://github.com/caesar0301/treelib/issues/221
