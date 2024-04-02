@@ -6,7 +6,7 @@ from itertools import zip_longest
 
 import btrview
 from btrview.utils import check_root
-from btrview.btrfs import Btrfs
+from btrview.btrfs import Btrfs, get_forest
 
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""
@@ -38,10 +38,11 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
         print(f"{fs}")
-        subvol_tree = fs.forest(False, root, deleted, unreachable)
+        subvols = fs.subvolumes(root,deleted,unreachable)
+        subvol_tree = get_forest([s for s in subvols if not s.deleted],"subvol")
         subvol_str = get_forest_string(subvol_tree, "Subvolumes", prop)
 
-        snap_tree = fs.forest(True, root, deleted, unreachable)
+        snap_tree = get_forest(subvols,"snap")
         snap_str = get_forest_string(snap_tree, "Snapshots", prop)
 
         zipper = zip_longest(subvol_str.splitlines(),snap_str.splitlines(),fillvalue="")
