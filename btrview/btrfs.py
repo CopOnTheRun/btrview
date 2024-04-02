@@ -19,7 +19,8 @@ class Btrfs:
         """Initialist with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
         self.label = label
-        self._get_mounts()
+        if not self._UUIDs:
+            self._get_mounts()
 
     @classmethod
     def _get_mounts(cls) -> None:
@@ -47,7 +48,9 @@ class Btrfs:
     @classmethod
     def get_filesystems(cls, labels:list[str] | None = None) -> list[Self]:
         """Returns a list of each filesystem on the system."""
-        cls._get_mounts() #had to be here in case nothing gets initialized
+        #had to be here in case nothing gets initialized
+        if not cls._UUIDs:
+            cls._get_mounts() 
         filesystems = []
         for uuid,label in cls._UUIDs.items():
             if not labels or (label in labels):
