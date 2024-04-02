@@ -69,16 +69,24 @@ class Btrfs:
     def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
-        out = run(f"btrfs subvolume list -u {mount_point}")
-        fs_uuids = []
+        out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
+
         subvols = []
+        keys = "ID,gen,cgen,parent,parent_uuid,received_uuid,uuid".split(",")
+        vals = "Subvolume ID,Generation,Gen at creation,Parent ID,Parent UUID,Received UUID,UUID".split(",")
+        key_dict = {key:val for key,val in zip(keys,vals)}
         for line in out.stdout.splitlines():
-            match = re.search(r"uuid\s*(\S*)",line)
-            if match:
-                fs_uuids.append(match.group(1))
-        for uuid in fs_uuids:
-            subvol = Subvolume.from_UUID(uuid, mount_point, self.mounts)
-            subvols.append(subvol)
+            match_dict = {}
+            for key,val in key_dict.items():
+                match = re.search(f"\\b{key}\\s+(\\S+)",line)
+                if match and match.group(1) == "-":
+                    match_dict[val] = None
+                elif match :
+                    match_dict[val] = match.group(1)
+            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>")
+            match_dict["btrfs Path"] = Path(f"/{path_match}".replace("//","/",1))
+            match_dict["Name"] = match_dict["btrfs Path"].name
+            subvols.append(Subvolume(match_dict,self.mounts))
         if not unreachable:
             to_remove = []
             for subvol in subvols:
