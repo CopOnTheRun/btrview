@@ -155,6 +155,7 @@ def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], 
 def get_forest(subvolumes: list[Subvolume], kind = "subvol") -> list[Tree]:
     """Turns a flat list of subvolumes into a forest of trees."""
     trees: list[Tree] = []
+    subvolumes = subvolumes.copy()
     while subvolumes:
         subvol = subvolumes[0]
         get_tree(subvol, subvolumes, trees, kind)
