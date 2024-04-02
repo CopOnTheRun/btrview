@@ -58,10 +58,10 @@ class Btrfs:
     @classmethod
     def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
         """Returns a list of deleted subvolumes"""
-        uuids = {s["UUID"] for s in subvols}
+        uuids = {s.id("snap") for s in subvols}
         puuids = set()
         for subvol in subvols:
-            puuid = subvol["Parent UUID"]
+            puuid = subvol.parent("snap")
             if puuid and (puuid not in uuids):
                 puuids.add(puuid)
         return [Subvolume({"UUID":puuid}, tuple(), deleted=True) for puuid in puuids]
