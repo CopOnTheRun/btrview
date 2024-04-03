@@ -58,7 +58,7 @@ class Subvolume:
         """Returns parent UUID or ID string"""
         match p_type:
             case "snap":
-                parent = self["Recieved UUID"] or self["Parent UUID"]
+                parent = self["Received UUID"] or self["Parent UUID"]
             case "subvol":
                 parent = self["Parent ID"]
             case _:
