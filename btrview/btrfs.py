@@ -86,8 +86,8 @@ class Btrfs:
                     match_dict[val] = None
                 elif match :
                     match_dict[val] = match.group(1)
-            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>")
-            match_dict["btrfs Path"] = Path(f"/{path_match}".replace("//","/",1))
+            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>/")
+            match_dict["btrfs Path"] = Path(f"/{path_match}")
             match_dict["Name"] = match_dict["btrfs Path"].name
             subvols.append(Subvolume(match_dict,self.mounts))
         if not unreachable:
