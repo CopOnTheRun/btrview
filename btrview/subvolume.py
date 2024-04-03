@@ -33,10 +33,11 @@ class Mount:
 class Subvolume:
     """Class representing a btrfs subvolume"""
     def __init__(self, props: dict[str,str|None], mounts: tuple[Mount, ...],
-                 deleted: bool = False,) -> None:
+                 deleted: bool = False, show: bool = False) -> None:
         self.props = props
         self.mounts = mounts
         self.deleted = deleted
+        self._show = show
 
     @property
     def paths(self) -> list[Path]:
@@ -81,14 +82,14 @@ class Subvolume:
         """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -u {uuid} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props, mounts)
+        return cls(props, mounts, show = True)
 
     @classmethod
     def from_ID(cls, ID: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
         cmd = f"btrfs subvolume show -r {ID} {path}"
         props = cls._run_cmd(cmd)
-        return cls(props, mounts)
+        return cls(props, mounts, show = True)
 
     @classmethod
     def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
@@ -125,6 +126,13 @@ class Subvolume:
     def __getitem__(self, key: str) -> str | None:
         """Returns the item from the props dictionary, but instead
         of throwing a key error, returns None"""
+        if key in self.props:
+            return self.props.get(key)
+        elif not self._show and not self.deleted:
+            cmd = f"btrfs subvolume show -u {self['UUID']} {self.mounts[0].target}"
+            props = self._run_cmd(cmd)
+            self.props |= props
+            self._show = True
         return self.props.get(key)
 
     def __str__(self) -> str:
