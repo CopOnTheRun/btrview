@@ -44,7 +44,11 @@ class Subvolume:
         if not self["btrfs Path"]:
             return []
         btr_path = Path(self["btrfs Path"])
-        return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
+        paths = [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
+        if not all(path.exists() for path in paths):
+            raise FileNotFoundError(f"Something went wrong resolving paths for {self['Name']}")
+        return paths
+
 
     @property
     def mounted(self) -> bool:
