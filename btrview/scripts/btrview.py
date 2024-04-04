@@ -3,6 +3,7 @@
 import argparse
 import textwrap
 from itertools import zip_longest
+import rich
 
 import btrview
 from btrview.utils import check_root
