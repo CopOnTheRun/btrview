@@ -92,6 +92,13 @@ class Subvolume:
         return cls(props, mounts, show = True)
 
     @classmethod
+    def from_path(cls, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
+        cmd = f"btrfs subvolume show {path}"
+        props = cls._run_cmd(cmd)
+        path = Path(path)
+        return cls(props, mounts, show = True)
+
+    @classmethod
     def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
         """Runs the shell command and returns the prop dictionary
         if the command doesn't error"""
@@ -148,35 +155,22 @@ class Subvolume:
     def __eq__(self, other) -> bool:
         return self["UUID"] == other["UUID"]
 
-class MountedSubvolume(Subvolume):
-    """Class representing a mounted subvolume. Differs from a normal Subvolume
-    in that it can be snapshotted and sent since there's a path to it."""
-    def __init__(self, props: dict[str, str| None], path: Path) -> None:
-        self.props = props
-        self.path = path
 
-    @classmethod
-    def from_path(cls, path: str | Path) -> Self:
-        cmd = f"btrfs subvolume show {path}"
-        props = cls._run_cmd(cmd)
-        path = Path(path)
-        return cls(props, path)
-
-    def same_mount(self, path: Path) -> bool:
-        """Returns true if a subvolume is on the same filesystem as a specified path"""
-        return get_UUIDs(self.path) == get_UUIDs(path)
+    #METHODS BELOW THIS LINE WILL CHANGE THE CONTENTS OF YOUR FILESYSTEM
+    #LITTLE TESTING HAS BEEN DONE ON THEM, MAKING THEM UNSUITABLE FOR MOST CASES
+    #USE AT YOUR OWN RISK, BUT PREFERABLY DON'T
 
     def snapshot(self, snap_dir: Path, format_str: str = "") -> Self:
         """Take a snapshot of the subvolume and save it to snap_dir"""
         if not snap_dir.is_dir():
             raise NotADirectoryError
         if format_str:
-            timestamp = datetime.now().astimezone().strftime(format_str)
+            timestamp = datetime.now().strftime(format_str)
         else:
-            timestamp = datetime.now().astimezone().isoformat()
-        snap_file = snap_dir / timestamp
+            timestamp = datetime.now().isoformat(timespec="seconds")
+        snap_file = snap_dir / f"{self['Name']}@{timestamp}"
         out = run(f"btrfs subvolume snapshot -r '{self.path}' '{snap_file}'")
-        return type(self).from_path(snap_file)
+        return type(self).from_path(snap_file, self.mounts)
 
     def send(self, path: Path) -> Self:
         """Sends the subvolume to another filesystem"""
@@ -184,15 +178,15 @@ class MountedSubvolume(Subvolume):
             #note that `shell=True` has some security implications with
             #user input, but figuring out how to properly do this with
             #subprocess.Popen() is not what I want to do right now.
-            subprocess.run(f"btrfs send {self} | btrfs receive {path}", shell=True, check=True)
+            subprocess.run(f"btrfs send {self.path} | btrfs receive {path}", shell=True, check=True)
         except Exception as e:
             run(f"btrfs subvolume delete '{path}'")
-            print(e)
-        return type(self).from_path(path / self.path.name)
 
-    def delete(self) -> Subvolume:
+        return type(self).from_path(path / self.path.name, self.mounts)
+
+    def delete(self) -> Self:
         """Deletes the subvolume"""
-        run(f"btrfs subvolume delete '{self}'")
+        run(f"btrfs subvolume delete '{self.path}'")
         props = {"UUID":self["UUID"]}
-        return Subvolume(props, tuple(), deleted=True)
+        return type(self)(props, tuple(), deleted=True)
 
