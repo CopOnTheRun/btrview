@@ -11,6 +11,9 @@ from btrview.utils import get_UUIDs, run
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
 
+class NotReachableError(Exception):
+    """Throw when a subvolume is not reachable on the filesystem"""
+
 @dataclass(frozen=True)
 class Mount:
     """Basic class for working with mounted subvolumes."""
@@ -45,6 +48,14 @@ class Subvolume:
             return []
         btr_path = Path(self["btrfs Path"])
         return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
+
+    @property
+    def path(self) -> Path:
+        """Returns a path of the subvolume if one exists."""
+        if not self.paths:
+            raise NotReachableError("This subvolume isn't reachable from the filesystem!")
+        else:
+            return self.paths[0]
 
     @property
     def mounted(self) -> bool:
