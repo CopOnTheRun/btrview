@@ -17,6 +17,10 @@ dependencies = [
 	"rich"
 ]
 
+[project.optional-dependencies]
+build = ["build","twine"]
+dev = ["bumpver","mypy","pip-tools"]
+
 [project.scripts]
 btrview = "btrview.scripts.btrview:main"
 
