@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
-import textwrap
-from itertools import zip_longest
-import rich
+
+from rich.tree import Tree as RichTree
+from rich import print
+import treelib
 
 import btrview
 from btrview.utils import check_root
@@ -40,24 +41,29 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     for fs in filesystems:
         print(f"{fs}")
         subvols = fs.subvolumes(root,deleted,unreachable)
-        subvol_tree = get_forest([s for s in subvols if not s.deleted],"subvol")
-        subvol_str = get_forest_string(subvol_tree, "Subvolumes", prop)
+        subvol_forest = get_forest([s for s in subvols if not s.deleted],"subvol")
+        subvol_forest = rich_forest(subvol_forest)
+        snapshot_forest = get_forest(subvols,"snap")
+        snapshot_forest = rich_forest(snapshot_forest)
+        for tree in subvol_forest:
+            print(tree)
+        for tree in snapshot_forest:
+            print(tree)
 
-        snap_tree = get_forest(subvols,"snap")
-        snap_str = get_forest_string(snap_tree, "Snapshots", prop)
 
-        zipper = zip_longest(subvol_str.splitlines(),snap_str.splitlines(),fillvalue="")
-        for subvol_line, snap_line in zipper:
-            print(f"{subvol_line:<50}{snap_line:}")
+def treelib_to_rich(tree: treelib.Tree, node: treelib.Node, rich_tree: RichTree) -> RichTree:
+    for child in tree.children(node.identifier):
+        rich_child = rich_tree.add(child.tag)
+        treelib_to_rich(tree, child, rich_child)
+    return rich_tree
 
-def get_forest_string(forest, header, prop: str = ""):
-    forest_str = f"{header}:\n"
+def rich_forest(forest: list[treelib.Tree]) -> list[RichTree]:
+    r_forest = []
     for tree in forest:
-        #stdout=False is only needed because of bug
-        #see https://github.com/caesar0301/treelib/issues/221
-        tree_str = tree.show(data_property=prop, stdout=False)
-        forest_str += textwrap.indent(str(tree_str), "  ")
-    return forest_str
+        root = tree.get_node(tree.root)
+        rich_tree = RichTree(root.tag)
+        r_forest.append(treelib_to_rich(tree,root,rich_tree))
+    return r_forest
 
 def main():
     args = parser().parse_args()
