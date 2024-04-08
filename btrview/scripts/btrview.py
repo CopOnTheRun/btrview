@@ -32,7 +32,7 @@ def parser() -> argparse.ArgumentParser:
     arg_parser.add_argument(
             "--property",
             help = "The subvolume property to print out in the tree",
-            default = None)
+            default = "Name")
 
     return arg_parser
 
@@ -43,26 +43,30 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
         print(f"{fs}")
         subvols = fs.subvolumes(root,deleted,unreachable)
         subvol_forest = get_forest([s for s in subvols if not s.deleted],"subvol")
-        subvol_forest = rich_forest(subvol_forest)
+        subvol_forest = rich_forest(subvol_forest, prop)
         snapshot_forest = get_forest(subvols,"snap")
-        snapshot_forest = rich_forest(snapshot_forest)
+        snapshot_forest = rich_forest(snapshot_forest, prop)
         for tree in subvol_forest:
             print(tree)
         for tree in snapshot_forest:
             print(tree)
 
-def treelib_to_rich(tree: treelib.Tree, node: treelib.Node, rich_tree: RichTree | None = None) -> RichTree:
+def treelib_to_rich(tree: treelib.Tree,
+                    node: treelib.Node,
+                    prop: str,
+                    rich_tree: RichTree | None = None,
+                    ) -> RichTree:
     if rich_tree is None:
-        rich_tree = RichTree(rich_subvol(node.data))
+        rich_tree = RichTree(rich_subvol(node.data, prop))
     for child in tree.children(node.identifier):
-        text = rich_subvol(child.data)
+        text = rich_subvol(child.data, prop)
         rich_child = rich_tree.add(text)
-        treelib_to_rich(tree, child, rich_child)
+        treelib_to_rich(tree, child, prop, rich_child)
     return rich_tree
 
 
-def rich_subvol(subvol: Subvolume) -> str:
-    rich_str = str(subvol)
+def rich_subvol(subvol: Subvolume, prop: str) -> str:
+    rich_str = str(subvol[prop] if subvol[prop] is not None else subvol)
     if subvol.mount_points:
         rich_str = f"[bold]{rich_str}[/bold]"
     if subvol.deleted:
@@ -71,11 +75,11 @@ def rich_subvol(subvol: Subvolume) -> str:
         rich_str = f"[grey58]{rich_str}[/grey58]"
     return rich_str
 
-def rich_forest(forest: list[treelib.Tree]) -> list[RichTree]:
+def rich_forest(forest: list[treelib.Tree], prop) -> list[RichTree]:
     r_forest = []
     for tree in forest:
         root = tree.get_node(tree.root)
-        r_forest.append(treelib_to_rich(tree, root))
+        r_forest.append(treelib_to_rich(tree, root, prop))
     return r_forest
 
 def main():
