@@ -131,20 +131,30 @@ class Subvolume:
         """Returns the item from the props dictionary, but instead
         of throwing a key error, returns None"""
         if key in self.props:
-            return self.props.get(key)
-        elif not self._show and not self.deleted:
+            return self.props[key]
+        elif self.deleted:
+            #only thing deleted subvolumes should return is UUID or Name
+            return None if key != "Name" else self.props["UUID"]
+        elif not self._show:
             cmd = f"btrfs subvolume show -u {self['UUID']} {self.mounts[0].target}"
             props = self._run_cmd(cmd)
             self.props |= props
             self._show = True
-        return self.props.get(key)
+        try:
+            return self.props[key]
+        except KeyError:
+            pass
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(f"Subvolume has no attribute or key '{key}'")
 
     def __str__(self) -> str:
-        string = self["Name"] or str(self["UUID"])
+        string = self["Name"]
         if mps := self.mount_points:
             mp_string = ", ".join(str(mp) for mp in mps)
             string = f"{string} on: {mp_string}"
-        return string
+        return str(string)
 
     def __hash__(self) -> int:
         return hash(self["UUID"])
