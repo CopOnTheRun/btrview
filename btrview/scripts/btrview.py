@@ -9,6 +9,7 @@ import treelib
 import btrview
 from btrview.utils import check_root
 from btrview.btrfs import Btrfs, get_forest
+from btrview.subvolume import Subvolume
 
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""
@@ -50,19 +51,31 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
         for tree in snapshot_forest:
             print(tree)
 
-
-def treelib_to_rich(tree: treelib.Tree, node: treelib.Node, rich_tree: RichTree) -> RichTree:
+def treelib_to_rich(tree: treelib.Tree, node: treelib.Node, rich_tree: RichTree | None = None) -> RichTree:
+    if rich_tree is None:
+        rich_tree = RichTree(rich_subvol(node.data))
     for child in tree.children(node.identifier):
-        rich_child = rich_tree.add(child.tag)
+        text = rich_subvol(child.data)
+        rich_child = rich_tree.add(text)
         treelib_to_rich(tree, child, rich_child)
     return rich_tree
+
+
+def rich_subvol(subvol: Subvolume) -> str:
+    rich_str = str(subvol)
+    if subvol.mount_points:
+        rich_str = f"[bold]{rich_str}[/bold]"
+    if subvol.deleted:
+        rich_str = f"[red1]{rich_str}[/red1]"
+    if not subvol.mounted:
+        rich_str = f"[grey58]{rich_str}[/grey58]"
+    return rich_str
 
 def rich_forest(forest: list[treelib.Tree]) -> list[RichTree]:
     r_forest = []
     for tree in forest:
         root = tree.get_node(tree.root)
-        rich_tree = RichTree(root.tag)
-        r_forest.append(treelib_to_rich(tree,root,rich_tree))
+        r_forest.append(treelib_to_rich(tree, root))
     return r_forest
 
 def main():
