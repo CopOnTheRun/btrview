@@ -4,8 +4,8 @@ import argparse
 
 from rich.tree import Tree as RichTree
 from rich.console import Group
+from rich.console import Console
 from rich.table import Table
-from rich import print
 import treelib
 
 import btrview
@@ -36,9 +36,14 @@ def parser() -> argparse.ArgumentParser:
             help = "The subvolume property to print out in the tree",
             default = "Name")
 
+    arg_parser.add_argument(
+            "--export",
+            choices = ("text","svg","html"),
+            help = "Export to specifed type instead of table",)
+
     return arg_parser
 
-def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
+def logic(labels: list[str], root, deleted, unreachable, prop, export) -> str | None:
     check_root()
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
@@ -53,7 +58,19 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
         forest_table.add_column("Subvolume Tree:")
         forest_table.add_column("Snapshot Tree:")
         forest_table.add_row(subvol_forest,snapshot_forest)
-        print(forest_table)
+
+        console = Console(record = True)
+        with console.capture() as capture:
+            console.print(forest_table)
+        match export:
+            case "svg":
+                return console.export_svg()
+            case "text":
+                return console.export_text()
+            case "html":
+                return console.export_html()
+            case _:
+                return capture.get()
 
 def treelib_to_rich(tree: treelib.Tree,
                     node: treelib.Node,
@@ -92,7 +109,8 @@ def main():
     root = "root" in args.include
     deleted = "deleted" in args.include
     unreachable = "unreachable" in args.include
-    logic(args.labels, root ,deleted, unreachable, args.property)
+    output = logic(args.labels, root ,deleted, unreachable, args.property,args.export)
+    print(output)
     
 if __name__ == "__main__":
     main()
