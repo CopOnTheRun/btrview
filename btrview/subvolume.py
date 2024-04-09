@@ -133,8 +133,9 @@ class Subvolume:
         if key in self.props:
             return self.props[key]
         elif self.deleted:
-            #only thing deleted subvolumes should return is UUID or Name
-            return None if key != "Name" else self.props["UUID"]
+            #just assume it's None for deleted subvols. #could cause problems
+            #in that deleted Subvolumes won't throw KeyError
+            return None
         elif not self._show:
             cmd = f"btrfs subvolume show -u {self['UUID']} {self.mounts[0].target}"
             props = self._run_cmd(cmd)
