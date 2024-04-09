@@ -12,6 +12,8 @@ from btrview.subvolume import Subvolume
 def logic(labels: list[str], root, deleted, unreachable, prop, export) -> str | None:
     """Constructs Rich output based on the parameters given."""
     filesystems = Btrfs.get_filesystems(labels)
+    console = Console(record = True)
+    captures = []
     for fs in filesystems:
         subvols = fs.subvolumes(root,deleted,unreachable)
         subvol_forest = get_forest(subvols,"subvol")
@@ -25,18 +27,18 @@ def logic(labels: list[str], root, deleted, unreachable, prop, export) -> str | 
         forest_table.add_column("Snapshot Tree:")
         forest_table.add_row(subvol_forest,snapshot_forest)
 
-        console = Console(record = True)
         with console.capture() as capture:
             console.print(forest_table)
-        match export:
-            case "svg":
-                return console.export_svg()
-            case "text":
-                return console.export_text()
-            case "html":
-                return console.export_html()
-            case _:
-                return capture.get()
+        captures.append(capture.get())
+    match export:
+        case "svg":
+            return console.export_svg()
+        case "text":
+            return console.export_text()
+        case "html":
+            return console.export_html()
+        case _:
+            return "".join(captures)
 
 def treelib_to_rich(tree: treelib.Tree,
                     node: treelib.Node,
