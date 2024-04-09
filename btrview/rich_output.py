@@ -1,13 +1,16 @@
+"""Functions to construct Rich objects for output to the terminal"""
+import treelib
+
 from rich.tree import Tree as RichTree
 from rich.console import Group
 from rich.console import Console
 from rich.table import Table
-import treelib
 
 from btrview.btrfs import Btrfs, get_forest
 from btrview.subvolume import Subvolume
 
 def logic(labels: list[str], root, deleted, unreachable, prop, export) -> str | None:
+    """Constructs Rich output based on the parameters given."""
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
         subvols = fs.subvolumes(root,deleted,unreachable)
@@ -40,6 +43,7 @@ def treelib_to_rich(tree: treelib.Tree,
                     prop: str,
                     rich_tree: RichTree | None = None,
                     ) -> RichTree:
+    """Creates a rich Tree from a treelib Tree"""
     if rich_tree is None:
         rich_tree = RichTree(rich_subvol(node.data, prop))
     for child in tree.children(node.identifier):
@@ -50,6 +54,7 @@ def treelib_to_rich(tree: treelib.Tree,
 
 
 def rich_subvol(subvol: Subvolume, prop: str) -> str:
+    """Returns a rich formated string from subvolume output"""
     rich_str = str(subvol[prop] if subvol[prop] is not None else subvol)
     if subvol.mount_points:
         rich_str = f"[bold]{rich_str}[/bold]"
@@ -60,6 +65,7 @@ def rich_subvol(subvol: Subvolume, prop: str) -> str:
     return rich_str
 
 def rich_forest(forest: list[treelib.Tree], prop) -> Group:
+    """Creates a Rich Group from a list of treelib Trees"""
     r_forest = []
     for tree in forest:
         root = tree.get_node(tree.root)
