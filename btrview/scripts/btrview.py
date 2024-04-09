@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import argparse
 
 import btrview
@@ -35,7 +34,6 @@ def parser() -> argparse.ArgumentParser:
             help = "Export to specifed type instead of table",)
 
     return arg_parser
-
 
 def main():
     check_root()
