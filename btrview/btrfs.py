@@ -117,9 +117,7 @@ class Btrfs:
         return get_forest(self.subvolumes(root, deleted, unreachable), kind)
         
     def __str__(self) -> str:
-        label =  f"Label: {self.label}"
-        uuid = f"UUID: {self.uuid}"
-        return f"{label}\n{uuid}"
+        return f"{self.label or self.uuid}"
 
 def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""

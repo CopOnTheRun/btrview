@@ -48,8 +48,7 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
         snapshot_forest = get_forest(subvols,"snap")
         snapshot_forest = rich_forest(snapshot_forest, prop)
 
-        forest_table = Table(title = f"{fs}",title_style="",
-                             title_justify="left",show_edge=False,
+        forest_table = Table(title = f"{fs}", show_edge=False,
                              show_lines=False,expand=True,box=None,padding=0)
         forest_table.add_column("Subvolume Tree:")
         forest_table.add_column("Snapshot Tree:")
