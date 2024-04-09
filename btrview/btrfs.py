@@ -63,11 +63,14 @@ class Btrfs:
         """Returns a list of deleted subvolumes"""
         uuids = {s.id("snap") for s in subvols}
         puuids = set()
+        deleted_subvols = []
         for subvol in subvols:
             puuid = subvol.parent("snap")
             if puuid and (puuid not in uuids):
                 puuids.add(puuid)
-        return [Subvolume({"UUID":puuid}, tuple(), deleted=True) for puuid in puuids]
+                deleted_dict = {"UUID":puuid,"ID":puuid, "Name":puuid,"Parent UUID":puuid, "Parent ID":puuid}
+                deleted_subvols.append(Subvolume(deleted_dict,tuple(),deleted=True))
+        return deleted_subvols
             
     def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
@@ -111,8 +114,6 @@ class Btrfs:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
         kind = "snap" if snapshots else "subvol"
-        if kind == "subvol":
-            deleted = False
         return get_forest(self.subvolumes(root, deleted, unreachable), kind)
         
     def __str__(self) -> str:

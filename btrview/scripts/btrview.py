@@ -43,7 +43,7 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
         subvols = fs.subvolumes(root,deleted,unreachable)
-        subvol_forest = get_forest([s for s in subvols if not s.deleted],"subvol")
+        subvol_forest = get_forest(subvols,"subvol")
         subvol_forest = rich_forest(subvol_forest, prop)
         snapshot_forest = get_forest(subvols,"snap")
         snapshot_forest = rich_forest(snapshot_forest, prop)
