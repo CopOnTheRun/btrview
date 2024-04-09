@@ -3,6 +3,8 @@
 import argparse
 
 from rich.tree import Tree as RichTree
+from rich.console import Group
+from rich.table import Table
 from rich import print
 import treelib
 
@@ -40,16 +42,19 @@ def logic(labels: list[str], root, deleted, unreachable, prop) -> None:
     check_root()
     filesystems = Btrfs.get_filesystems(labels)
     for fs in filesystems:
-        print(f"{fs}")
         subvols = fs.subvolumes(root,deleted,unreachable)
         subvol_forest = get_forest([s for s in subvols if not s.deleted],"subvol")
         subvol_forest = rich_forest(subvol_forest, prop)
         snapshot_forest = get_forest(subvols,"snap")
         snapshot_forest = rich_forest(snapshot_forest, prop)
-        for tree in subvol_forest:
-            print(tree)
-        for tree in snapshot_forest:
-            print(tree)
+
+        forest_table = Table(title = f"{fs}",title_style="",
+                             title_justify="left",show_edge=False,
+                             show_lines=False,expand=True,box=None,padding=0)
+        forest_table.add_column("Subvolume Tree:")
+        forest_table.add_column("Snapshot Tree:")
+        forest_table.add_row(subvol_forest,snapshot_forest)
+        print(forest_table)
 
 def treelib_to_rich(tree: treelib.Tree,
                     node: treelib.Node,
@@ -75,12 +80,13 @@ def rich_subvol(subvol: Subvolume, prop: str) -> str:
         rich_str = f"[grey58]{rich_str}[/grey58]"
     return rich_str
 
-def rich_forest(forest: list[treelib.Tree], prop) -> list[RichTree]:
+def rich_forest(forest: list[treelib.Tree], prop) -> Group:
     r_forest = []
     for tree in forest:
         root = tree.get_node(tree.root)
         r_forest.append(treelib_to_rich(tree, root, prop))
-    return r_forest
+    rich_group = Group(*r_forest)
+    return rich_group
 
 def main():
     args = parser().parse_args()
@@ -91,4 +97,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-
