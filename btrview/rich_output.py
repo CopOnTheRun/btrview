@@ -103,7 +103,10 @@ def treelib_to_rich(tree: treelib.Tree,
 
 def rich_subvol(subvol: Subvolume, prop: str) -> str:
     """Returns a rich formated string from subvolume output"""
-    rich_str = str(subvol[prop] if subvol[prop] is not None else subvol)
+    if prop and subvol[prop] is not None:
+        rich_str = f"{subvol[prop]}"
+    else:
+        rich_str = f"{subvol}"
     if subvol.mount_points:
         rich_str = f"[bold]{rich_str}[/bold]"
     if subvol.deleted:

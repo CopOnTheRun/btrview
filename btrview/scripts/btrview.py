@@ -25,8 +25,7 @@ def parser() -> argparse.ArgumentParser:
 
     arg_parser.add_argument(
             "--property",
-            help = "The subvolume property to print out in the tree",
-            default = "Name")
+            help = "The subvolume property to print out in the tree",)
 
     arg_parser.add_argument(
             "--export",
@@ -48,6 +47,6 @@ def main():
     unreachable = "unreachable" in args.include
     output = logic(args.labels, root, deleted, unreachable, args.property, args.fold, args.export)
     print(output)
-    
+ 
 if __name__ == "__main__":
     main()
