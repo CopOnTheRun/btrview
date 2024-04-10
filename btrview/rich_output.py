@@ -96,7 +96,8 @@ def treelib_to_rich(tree: treelib.Tree,
         treelib_to_rich(tree, child, prop, fold, rich_child)
     if fold and len(children) > fold:
         extra = len(children) - fold
-        rich_tree.add(f"And {extra} more...")
+        string = f"And {extra} more..." if extra != 1 else f"{children[-1].data}"
+        rich_tree.add(string)
 
     return rich_tree
 
