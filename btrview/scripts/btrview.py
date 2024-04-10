@@ -33,6 +33,11 @@ def parser() -> argparse.ArgumentParser:
             choices = ("text","svg","html"),
             help = "Export to specifed type instead of table",)
 
+    arg_parser.add_argument(
+            "--fold",
+            help = "Fold child output greater than N lines.",
+            metavar = "n",
+            type = int)
     return arg_parser
 
 def main():
@@ -41,7 +46,7 @@ def main():
     root = "root" in args.include
     deleted = "deleted" in args.include
     unreachable = "unreachable" in args.include
-    output = logic(args.labels, root ,deleted, unreachable, args.property,args.export)
+    output = logic(args.labels, root, deleted, unreachable, args.property, args.fold, args.export)
     print(output)
     
 if __name__ == "__main__":
