@@ -18,6 +18,27 @@ def create_rich_table(title: str, subvol_forest: Group,snapshot_forest: Group) -
     forest_table.add_row(subvol_forest,snapshot_forest)
     return forest_table
 
+def sort_tree(tree: treelib.Tree,
+              new_tree: treelib.Tree | None = None) -> treelib.Tree:
+    if new_tree is None:
+        root = tree.get_node(tree.root)
+        new_tree = treelib.Tree()
+        new_tree.add_node(root)
+    subtrees = [tree.subtree(t.identifier) for t in tree.children(tree.root)]
+    children = tree.children(tree.root)
+    sort_func = lambda n: tree.subtree(n.identifier).size()
+    sorted_children = sorted(children, key = sort_func,reverse=True)
+    for child in sorted_children:
+        new_tree.add_node(child,tree.root)
+        subtree = tree.subtree(child.identifier)
+        sort_tree(subtree, new_tree)
+    return new_tree
+
+def sort_forest(forest: list[treelib.Tree]) -> list[treelib.Tree]:
+    sort_func = lambda t: t.size()
+    forest = [sort_tree(t) for t in forest]
+    return sorted(forest, key = sort_func, reverse=True)
+
 def logic(labels: list[str], root: bool, deleted: bool,
           unreachable:bool , prop: str, fold: int, export: str) -> str:
     """Constructs Rich output based on the parameters given."""
@@ -27,10 +48,12 @@ def logic(labels: list[str], root: bool, deleted: bool,
         subvols = fs.subvolumes(root,deleted,unreachable)
 
         subvol_forest = get_forest(subvols,"subvol")
+        subvol_forest = sort_forest(subvol_forest)
         subvol_forest = rich_forest(subvol_forest, prop, fold)
         subvol_group = Group(*subvol_forest)
 
         snapshot_forest = get_forest(subvols,"snap")
+        snapshot_forest = sort_forest(snapshot_forest)
         snapshot_forest = rich_forest(snapshot_forest, prop, fold)
         snapshot_group = Group(*snapshot_forest)
 
