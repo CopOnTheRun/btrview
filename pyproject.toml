@@ -37,6 +37,9 @@ commit = true
 tag = true
 push = false
 
+[tool.setuptools]
+py-modules = ["btrview"]
+
 [tool.bumpver.file_patterns]
 "pyproject.toml" = [
     'current_version = "{version}"',
