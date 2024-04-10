@@ -47,7 +47,10 @@ class Subvolume:
         if not self["btrfs Path"]:
             return []
         btr_path = Path(self["btrfs Path"])
-        return [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
+        paths = [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
+        paths = [path for path in paths if path.exists()]
+        return paths
+
 
     @property
     def path(self) -> Path:
@@ -145,20 +148,31 @@ class Subvolume:
         """Returns the item from the props dictionary, but instead
         of throwing a key error, returns None"""
         if key in self.props:
-            return self.props.get(key)
-        elif not self._show and not self.deleted:
+            return self.props[key]
+        elif self.deleted:
+            #just assume it's None for deleted subvols. #could cause problems
+            #in that deleted Subvolumes won't throw KeyError
+            return None
+        elif not self._show:
             cmd = f"btrfs subvolume show -u {self['UUID']} {self.mounts[0].target}"
             props = self._run_cmd(cmd)
             self.props |= props
             self._show = True
-        return self.props.get(key)
+        try:
+            return self.props[key]
+        except KeyError:
+            pass
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(f"Subvolume has no attribute or key '{key}'")
 
     def __str__(self) -> str:
-        string = self["Name"] or str(self["UUID"])
+        string = self["Name"]
         if mps := self.mount_points:
             mp_string = ", ".join(str(mp) for mp in mps)
             string = f"{string} on: {mp_string}"
-        return string
+        return str(string)
 
     def __hash__(self) -> int:
         return hash(self["UUID"])
@@ -200,4 +214,3 @@ class Subvolume:
         run(f"btrfs subvolume delete '{self.path}'")
         props = {"UUID":self["UUID"]}
         return type(self)(props, tuple(), deleted=True)
-

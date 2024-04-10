@@ -63,11 +63,14 @@ class Btrfs:
         """Returns a list of deleted subvolumes"""
         uuids = {s.id("snap") for s in subvols}
         puuids = set()
+        deleted_subvols = []
         for subvol in subvols:
             puuid = subvol.parent("snap")
-            if puuid and (puuid not in uuids):
+            if puuid and (puuid not in uuids) and (puuid not in puuids):
                 puuids.add(puuid)
-        return [Subvolume({"UUID":puuid}, tuple(), deleted=True) for puuid in puuids]
+                deleted_dict = {"UUID":puuid,"Subvolume ID":puuid, "Name":puuid}
+                deleted_subvols.append(Subvolume(deleted_dict,tuple(),deleted=True))
+        return deleted_subvols
             
     def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
@@ -86,8 +89,8 @@ class Btrfs:
                     match_dict[val] = None
                 elif match :
                     match_dict[val] = match.group(1)
-            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>")
-            match_dict["btrfs Path"] = Path(f"/{path_match}".replace("//","/",1))
+            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>/")
+            match_dict["btrfs Path"] = Path(f"/{path_match}")
             match_dict["Name"] = match_dict["btrfs Path"].name
             subvols.append(Subvolume(match_dict,self.mounts))
         if not unreachable:
@@ -111,14 +114,10 @@ class Btrfs:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
         kind = "snap" if snapshots else "subvol"
-        if kind == "subvol":
-            deleted = False
         return get_forest(self.subvolumes(root, deleted, unreachable), kind)
         
     def __str__(self) -> str:
-        label =  f"Label: {self.label}"
-        uuid = f"UUID: {self.uuid}"
-        return f"{label}\n{uuid}"
+        return f"{self.label or self.uuid}"
 
 def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""

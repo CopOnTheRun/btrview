@@ -5,34 +5,11 @@
 Call btrview with a label to get an overview of the subvolume and snapshot tree layout for that specified btrfs filesystem. Call it with multiple labels and it will list each filesystem specified. Call it with no labels, and it will give an overview of every btrfs filesystem it can find.
 
 ```
-> sudo btrview --labels HDDs
-Label: HDDs
-UUID: 8ad35ea1-e26b-4b2b-aea6-6b13e2a5700d
-Subvolumes:                                       Snapshots:
-  <FS_TREE>                                         Media on: /srv/media
-  ├── Data on: /srv/Data                            Snaps on: /hdd-snaps
-  ├── Media on: /srv/media                          2022-06-19T17:43:59.743597-04:00
-  │   ├── 2024-02-01T02:00:13.760115-05:00          ├── 2022-05-13T01:49:30.487324-04:00
-  │   └── Pics on: /Snaps/Testy                     │   └── 2022-05-03T23:01:29.136711-04:00
-  │       └── SubVolume                             ├── 2022-06-01 15:35:50-04:00
-  ├── Snaps on: /hdd-snaps                          └── 2022-06-20T15:33:57.263901-04:00
-  │   ├── 2022-05-03T23:01:29.136711-04:00          Data on: /srv/Data
-  │   ├── 2022-05-13T01:49:30.487324-04:00          ├── 2024-02-20T02:00:09.667556-05:00
-  │   ├── 2022-06-01 15:35:50-04:00                 ├── 2024-02-21T02:00:04.595496-05:00
-  │   ├── 2022-06-19T17:43:59.743597-04:00          ├── 2024-02-22T12:12:06.083575-05:00
-  │   ├── 2022-06-20T15:33:57.263901-04:00          ├── 2024-02-22T12:46:11.076236-05:00
-  │   ├── 2024-02-02T13:30:19.170363-05:00          ├── 2024-02-22T13:53:21.336905-05:00
-  │   ├── 2024-02-20T02:00:09.667556-05:00          ├── 2024-02-22T13:57:28.944888-05:00
-  │   ├── 2024-02-21T02:00:04.595496-05:00          ├── 2024-02-22T13:58:19.780684-05:00
-  │   ├── 2024-02-22T12:12:06.083575-05:00          ├── 2024-02-23T02:00:19.096959-05:00
-  │   ├── 2024-02-22T12:46:11.076236-05:00          └── 2024-02-23T11:21:54.155429-05:00
-  │   ├── 2024-02-22T13:53:21.336905-05:00          2024-02-02T13:30:19.170363-05:00
-  │   ├── 2024-02-22T13:57:28.944888-05:00          Pics on: /Snaps/Testy
-  │   ├── 2024-02-22T13:58:19.780684-05:00          2024-02-01T02:00:13.760115-05:00
-  │   ├── 2024-02-23T02:00:19.096959-05:00          SubVolume
-  │   └── 2024-02-23T11:21:54.155429-05:00          subvolume-test
-  └── subvolume-test                                <FS_TREE>
+> sudo btrview --labels HDDs --fold 5
 ```
+![btrview output](images/output.svg)
+
+Subvolumes that are mounted (in fstab or somehow else) are in bold, those that are grey are subvolumes that aren't currently reachable on the filesystem, and subvolumes in red (not shown here) are not currently on the filesytem. This could be because they're deleted, or maybe its child subvolume was `btrfs received` from another filesystem.
 
 Wondering what the difference between the subvolume and snapshot tree is? [Check out the FAQ](#q-whats-the-difference-between-the-subvolume-tree-and-the-snapshot-tree)!
 
