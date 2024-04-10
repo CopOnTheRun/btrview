@@ -28,11 +28,13 @@ def logic(labels: list[str], root: bool, deleted: bool,
 
         subvol_forest = get_forest(subvols,"subvol")
         subvol_forest = rich_forest(subvol_forest, prop, fold)
+        subvol_group = Group(*subvol_forest)
 
         snapshot_forest = get_forest(subvols,"snap")
         snapshot_forest = rich_forest(snapshot_forest, prop, fold)
+        snapshot_group = Group(*snapshot_forest)
 
-        forest_table = create_rich_table(str(fs),subvol_forest,snapshot_forest)
+        forest_table = create_rich_table(str(fs),subvol_group,snapshot_group)
         tables.append(forest_table)
     return create_table_output(tables, export)
 
@@ -86,11 +88,11 @@ def rich_subvol(subvol: Subvolume, prop: str) -> str:
         rich_str = f"[grey58]{rich_str}[/grey58]"
     return rich_str
 
-def rich_forest(forest: list[treelib.Tree], prop: str, fold: int) -> Group:
-    """Creates a Rich Group from a list of treelib Trees"""
+def rich_forest(forest: list[treelib.Tree], prop: str, fold: int) -> list[RichTree]:
+    """Creates a list of Rich Trees from a list of treelib Trees"""
     r_forest = []
     for tree in forest:
         root = tree.get_node(tree.root)
-        r_forest.append(treelib_to_rich(tree, root, prop, fold))
-    rich_group = Group(*r_forest)
-    return rich_group
+        rich_tree = treelib_to_rich(tree, root, prop, fold)
+        r_forest.append(rich_tree)
+    return r_forest
