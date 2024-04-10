@@ -66,7 +66,7 @@ class Btrfs:
         deleted_subvols = []
         for subvol in subvols:
             puuid = subvol.parent("snap")
-            if puuid and (puuid not in uuids):
+            if puuid and (puuid not in uuids) and (puuid not in puuids):
                 puuids.add(puuid)
                 deleted_dict = {"UUID":puuid,"Subvolume ID":puuid, "Name":puuid}
                 deleted_subvols.append(Subvolume(deleted_dict,tuple(),deleted=True))
