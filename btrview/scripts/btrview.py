@@ -13,30 +13,31 @@ def parser() -> argparse.ArgumentParser:
 
     arg_parser.add_argument(
             "--labels",
-            help="The label of the filesystem to view",
+            help="The label of the filesystem(s) to view",
             nargs="+",)
 
     arg_parser.add_argument(
             "--include",
-            help = "Types of subvolumes to include in the tree",
+            help = "Types of subvolumes to include in the tree. Default are root and unreachable.",
             nargs = "*",
             choices = ("root","deleted","unreachable"),
             default = ("root","unreachable"))
 
     arg_parser.add_argument(
             "--property",
-            help = "The subvolume property to print out in the tree",)
-
-    arg_parser.add_argument(
-            "--export",
-            choices = ("text","svg","html"),
-            help = "Export to specifed type instead of table",)
+            help = "The subvolume property to print out in the tree. These are the keys from the `btrfs subvolume show` command.",)
 
     arg_parser.add_argument(
             "--fold",
             help = "Fold child output greater than N lines.",
-            metavar = "n",
+            metavar = "N",
             type = int)
+
+    arg_parser.add_argument(
+            "--export",
+            choices = ("text","svg","html"),
+            help = "Export the specifed type instead of a rich table. Using this flag will still write to stdout. If you wish to save to a file use shell redirection.",)
+
     return arg_parser
 
 def main():
