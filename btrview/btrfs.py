@@ -106,7 +106,7 @@ class Btrfs:
             subvols.extend(self._get_deleted_subvols(subvols))
         funcs: list[SubvolumeSieve] = []
         if not unreachable:
-            funcs.append(lambda s: not (s.mounted or s.deleted or s.root))
+            funcs.append(lambda s: not (s.mounted or s.deleted or s.root_subvolume))
         remove_subvols(subvols, funcs)
         return subvols
 

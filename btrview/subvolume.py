@@ -1,12 +1,10 @@
 """Subvolume Classes and errors."""
-import subprocess
 import re
 from pathlib import Path, PurePath
-from datetime import datetime
 from typing import Self
 from dataclasses import dataclass
 
-from btrview.utils import get_UUIDs, run
+from btrview.utils import run
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
@@ -41,6 +39,7 @@ class Subvolume:
 
     @property
     def paths(self) -> list[Path]:
+        """Returns all the reachable paths of the Subvolume"""
         if not self["btrfs Path"]:
             return []
         btr_path = Path(self["btrfs Path"])
@@ -48,17 +47,19 @@ class Subvolume:
         paths = [path for path in paths if path.exists()]
         return paths
 
-
     @property
     def mounted(self) -> bool:
+        """Returns whether the subvolume is reachable via the filesystem"""
         return bool(self.paths)
 
     @property
-    def root(self) -> bool:
+    def root_subvolume(self) -> bool:
+        """Returns whether the subvolume is the root_subvolume"""
         return self["Subvolume ID"] == "5"
 
     @property
     def mount_points(self) -> tuple[Path, ...]:
+        """Returns mount points of Subvolume"""
         targets = [mount.target for mount in self.mounts]
         return tuple(path for path in self.paths if path in targets)
 
