@@ -3,12 +3,14 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path, PurePath
-from typing import Self
+from typing import Self, Callable, TypeAlias
 
 from treelib import Tree
 
 from btrview.utils import run
 from btrview.subvolume import Subvolume, Mount
+
+SubvolumeSieve: TypeAlias = Callable[[Subvolume], bool]
 
 class Btrfs:
     """A class representing a btrfs filesystem"""
@@ -71,17 +73,14 @@ class Btrfs:
                 deleted_dict = {"UUID":puuid,"Subvolume ID":puuid, "Name":puuid}
                 deleted_subvols.append(Subvolume(deleted_dict,tuple(),deleted=True))
         return deleted_subvols
-            
-    def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
-        """Return a list of subvolumes on the file system"""
-        mount_point = self.mounts[0].target 
-        out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
 
+    def _parse_subvol_list(self, list_str: str) ->list[Subvolume]:
+        """Turns output from `btrfs subvolume list` command into a list of subvolumes"""
         subvols = []
         keys = "ID,gen,cgen,parent,parent_uuid,received_uuid,uuid".split(",")
         vals = "Subvolume ID,Generation,Gen at creation,Parent ID,Parent UUID,Received UUID,UUID".split(",")
         key_dict = {key:val for key,val in zip(keys,vals)}
-        for line in out.stdout.splitlines():
+        for line in list_str.splitlines():
             match_dict = {}
             for key,val in key_dict.items():
                 match = re.search(f"\\b{key}\\s+(\\S+)",line)
@@ -93,21 +92,22 @@ class Btrfs:
             match_dict["btrfs Path"] = Path(f"/{path_match}")
             match_dict["Name"] = match_dict["btrfs Path"].name
             subvols.append(Subvolume(match_dict,self.mounts))
-        if not unreachable:
-            to_remove = []
-            for subvol in subvols:
-                if not subvol.mounted:
-                    to_remove.append(subvol)
-            for subvol in to_remove:
-                subvols.remove(subvol)
-        #order matters here, root should override unreachable
+        return subvols
+
+    def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
+        """Return a list of subvolumes on the file system"""
+        mount_point = self.mounts[0].target 
+        out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
+        subvols = self._parse_subvol_list(out.stdout)
         if root:
             root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
             subvols.append(root_subvol)
-        #but also deleted needs to go after root
-        #this is kinda fragile, plan to fix it soon™
         if deleted:
             subvols.extend(self._get_deleted_subvols(subvols))
+        funcs: list[SubvolumeSieve] = []
+        if not unreachable:
+            funcs.append(lambda s: not (s.mounted or s.deleted or s.root))
+        remove_subvols(subvols, funcs)
         return subvols
 
     def forest(self, snapshots = False, root = True, deleted = False, unreachable = True,) -> list[Tree]:
@@ -159,3 +159,16 @@ def get_forest(subvolumes: list[Subvolume], kind = "subvol") -> list[Tree]:
         subvol = subvolumes[0]
         get_tree(subvol, subvolumes, trees, kind)
     return trees
+
+def remove_subvols(subvols: list[Subvolume], remove_funcs: list[SubvolumeSieve]):
+    """Remove subvolumes from a list determined by a list of sieve functions"""
+    to_remove = []
+    for subvol in subvols:
+        #if any of them evaluate True, then remove
+        bools = [f(subvol) for f in remove_funcs]
+        remove = any(bools)
+        if remove:
+            #don't want to remove in place while iterating
+            to_remove.append(subvol)
+    for subvol in to_remove:
+        subvols.remove(subvol)
