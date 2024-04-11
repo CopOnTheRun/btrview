@@ -99,15 +99,15 @@ class Btrfs:
         mount_point = self.mounts[0].target 
         out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
         subvols = self._parse_subvol_list(out.stdout)
-        if root:
+        if not root:
             root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
             subvols.append(root_subvol)
-        if deleted:
+        if not deleted:
             subvols.extend(self._get_deleted_subvols(subvols))
         funcs: list[SubvolumeSieve] = []
-        if not unreachable:
+        if unreachable:
             funcs.append(lambda s: not (s.mounted or s.deleted or s.root_subvolume))
-        if not snapshot:
+        if snapshot:
             funcs.append(lambda s: s.snapshot and not s.root_subvolume)
         remove_subvols(subvols, funcs)
         return subvols
