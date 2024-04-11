@@ -54,6 +54,10 @@ class Subvolume:
         return bool(self.paths)
 
     @property
+    def root(self) -> bool:
+        return self["Subvolume ID"] == "5"
+
+    @property
     def mount_points(self) -> tuple[Path, ...]:
         targets = [mount.target for mount in self.mounts]
         return tuple(path for path in self.paths if path in targets)
