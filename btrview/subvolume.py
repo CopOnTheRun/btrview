@@ -48,7 +48,7 @@ class Subvolume:
     @property
     def paths(self) -> list[Path]:
         """Returns all the reachable paths of the Subvolume"""
-        if not self["btrfs Path"]:
+        if self["btrfs Path"] is None:
             return []
         btr_path = Path(self["btrfs Path"])
         paths = [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
@@ -111,6 +111,12 @@ class Subvolume:
         cmd = f"btrfs subvolume show -r {ID} {path}"
         props = cls._run_cmd(cmd)
         return cls(props, mounts, show = True)
+
+    @classmethod
+    def from_deleted(cls, UUID: str) -> Self:
+        """Creates subvolume from subvolume's ID and any path on the filesystem"""
+        props: BtrDict = {"UUID":UUID,"Subvolume ID":UUID, "Name":UUID}
+        return cls(props, tuple(), deleted=True)
 
     @classmethod
     def _run_cmd(cls, cmd: str) -> BtrDict:

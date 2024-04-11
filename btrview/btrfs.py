@@ -63,15 +63,10 @@ class Btrfs:
     @classmethod
     def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
         """Returns a list of deleted subvolumes"""
-        uuids = {s.id("snap") for s in subvols}
-        puuids = set()
-        deleted_subvols = []
-        for subvol in subvols:
-            puuid = subvol.parent("snap")
-            if puuid and (puuid not in uuids) and (puuid not in puuids):
-                puuids.add(puuid)
-                deleted_dict = {"UUID":puuid,"Subvolume ID":puuid, "Name":puuid}
-                deleted_subvols.append(Subvolume(deleted_dict,tuple(),deleted=True))
+        uuids: set[str] = {s.id("snap") for s in subvols}
+        puuids: set[str] = {s.parent("snap") for s in subvols if s.parent("snap")}
+        deleted_puuids = puuids - uuids
+        deleted_subvols = [Subvolume.from_deleted(puuid) for puuid in deleted_puuids]
         return deleted_subvols
 
     def _parse_subvol_list(self, list_str: str) ->list[Subvolume]:
@@ -97,18 +92,18 @@ class Btrfs:
     def subvolumes(self, root: bool, deleted: bool, unreachable: bool, snapshot: bool) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
+        subvols = [] if root else [Subvolume.from_ID("5",mount_point, self.mounts)]
         out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
-        subvols = self._parse_subvol_list(out.stdout)
-        if not root:
-            root_subvol = Subvolume.from_ID("5", mount_point, self.mounts)
-            subvols.append(root_subvol)
-        if not deleted:
-            subvols.extend(self._get_deleted_subvols(subvols))
+        subvols.extend(self._parse_subvol_list(out.stdout))
+        subvols.extend(self._get_deleted_subvols(subvols))
+
         funcs: list[SubvolumeSieve] = []
         if unreachable:
             funcs.append(lambda s: not (s.mounted or s.deleted or s.root_subvolume))
         if snapshot:
             funcs.append(lambda s: s.snapshot and not s.root_subvolume)
+        if deleted:
+            funcs.append(lambda s: s.deleted)
         remove_subvols(subvols, funcs)
         return subvols
 
