@@ -3,15 +3,47 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path, PurePath
-from typing import Self, Callable, TypeAlias
+from typing import Self, Callable, TypeAlias, Iterable
 
 from treelib import Tree
 
 from btrview.utils import run
 from btrview.subvolume import Subvolume, Mount
 
-SubvolumeSieve: TypeAlias = Callable[[Subvolume], bool]
+Sieve: TypeAlias = Callable[[Subvolume], bool]
 
+class SubvolumeSieve:
+    """A class for sieving subvolumes"""
+    SIEVES: dict[str, Sieve] = {
+            "deleted": lambda s: s.deleted,
+            "root": lambda s: s.root_subvolume,
+            "snapshot": lambda s: s.snapshot and not s.root_subvolume,
+            "unreachable": lambda s: not (s.mounted or s.deleted or s.root_subvolume),
+            }
+
+    def __init__(self, subvolumes: list[Subvolume]) -> None:
+        self.subvolumes = subvolumes
+
+    def sieve_str(self, string_sieves: Iterable[str]):
+        """Removes subvolumes from a list based on string"""
+        sieves = [self.SIEVES[s] for s in string_sieves]
+        return self.sieve(sieves)
+
+    def sieve(self, remove_funcs: Iterable[Sieve]) -> list[Subvolume]:
+        """Remove subvolumes from a list determined by an iterable of sieve functions"""
+        to_remove = []
+        for subvol in self.subvolumes:
+            #if any of them evaluate True, then remove
+            bools = [f(subvol) for f in remove_funcs]
+            remove = any(bools)
+            if remove:
+                #don't want to remove in place while iterating
+                to_remove.append(subvol)
+        copy = self.subvolumes.copy()
+        for subvol in to_remove:
+            copy.remove(subvol)
+        return copy
+    
 class Btrfs:
     """A class representing a btrfs filesystem"""
     _UUIDs:  dict[str,str] = dict()
@@ -96,16 +128,9 @@ class Btrfs:
         out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
         subvols.extend(self._parse_subvol_list(out.stdout))
         subvols.extend(self._get_deleted_subvols(subvols))
+        sieve = SubvolumeSieve(subvols)
 
-        funcs: list[SubvolumeSieve] = []
-        if "unreachable" in remove:
-            funcs.append(lambda s: not (s.mounted or s.deleted or s.root_subvolume))
-        if "snapshot" in remove:
-            funcs.append(lambda s: s.snapshot and not s.root_subvolume)
-        if "deleted" in remove:
-            funcs.append(lambda s: s.deleted)
-        remove_subvols(subvols, funcs)
-        return subvols
+        return sieve.sieve_str(remove)
 
     def forest(self, snapshots: bool, remove: tuple[str, ...]) -> list[Tree]:
         """Returns a forest of subvolumes with parent/child relationships
@@ -157,15 +182,3 @@ def get_forest(subvolumes: list[Subvolume], kind = "subvol") -> list[Tree]:
         get_tree(subvol, subvolumes, trees, kind)
     return trees
 
-def remove_subvols(subvols: list[Subvolume], remove_funcs: list[SubvolumeSieve]):
-    """Remove subvolumes from a list determined by a list of sieve functions"""
-    to_remove = []
-    for subvol in subvols:
-        #if any of them evaluate True, then remove
-        bools = [f(subvol) for f in remove_funcs]
-        remove = any(bools)
-        if remove:
-            #don't want to remove in place while iterating
-            to_remove.append(subvol)
-    for subvol in to_remove:
-        subvols.remove(subvol)

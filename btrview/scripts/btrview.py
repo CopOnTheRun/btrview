@@ -4,6 +4,7 @@ import argparse
 import btrview
 from btrview.utils import check_root
 from btrview.rich_output import logic
+from btrview.btrfs import SubvolumeSieve
 
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""
@@ -20,7 +21,7 @@ def parser() -> argparse.ArgumentParser:
             "--exclude",
             help = "Types of subvolumes to exclude in the tree. Default is deleted. Pass the flag with no arguments to exclude no subvolumes.",
             nargs = "*",
-            choices = ("root","deleted","unreachable","snapshot"),
+            choices = SubvolumeSieve.SIEVES.keys(),
             default = ("deleted",))
 
     arg_parser.add_argument(
