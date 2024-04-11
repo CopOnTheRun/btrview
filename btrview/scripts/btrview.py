@@ -18,10 +18,10 @@ def parser() -> argparse.ArgumentParser:
 
     arg_parser.add_argument(
             "--include",
-            help = "Types of subvolumes to include in the tree. Default are root and unreachable.",
+            help = "Types of subvolumes to include in the tree. Default are root, unreachable and snapshot.",
             nargs = "*",
-            choices = ("root","deleted","unreachable"),
-            default = ("root","unreachable"))
+            choices = ("root","deleted","unreachable","snapshot"),
+            default = ("root","unreachable","snapshot"))
 
     arg_parser.add_argument(
             "--property",
@@ -46,7 +46,9 @@ def main():
     root = "root" in args.include
     deleted = "deleted" in args.include
     unreachable = "unreachable" in args.include
-    output = logic(args.labels, root, deleted, unreachable, args.property, args.fold, args.export)
+    snapshot = "snapshot" in args.include
+    output = logic(args.labels, root, deleted, unreachable, snapshot,
+                   args.property, args.fold, args.export)
     print(output)
  
 if __name__ == "__main__":

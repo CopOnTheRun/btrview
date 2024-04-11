@@ -40,12 +40,12 @@ def sort_forest(forest: list[treelib.Tree]) -> list[treelib.Tree]:
     return sorted(forest, key = sort_func, reverse=True)
 
 def logic(labels: list[str], root: bool, deleted: bool,
-          unreachable:bool , prop: str, fold: int, export: str) -> str:
+          unreachable:bool, snapshot: bool, prop: str, fold: int, export: str) -> str:
     """Constructs Rich output based on the parameters given."""
     filesystems = Btrfs.get_filesystems(labels)
     tables = []
     for fs in filesystems:
-        subvols = fs.subvolumes(root,deleted,unreachable)
+        subvols = fs.subvolumes(root,deleted,unreachable, snapshot)
 
         subvol_forest = get_forest(subvols,"subvol")
         subvol_forest = sort_forest(subvol_forest)

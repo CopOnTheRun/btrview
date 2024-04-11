@@ -58,6 +58,11 @@ class Subvolume:
         return self["Subvolume ID"] == "5"
 
     @property
+    def snapshot(self) -> bool:
+        """Returns whether the subvolume is a snapshot"""
+        return bool(self["Parent UUID"])
+
+    @property
     def mount_points(self) -> tuple[Path, ...]:
         """Returns mount points of Subvolume"""
         targets = [mount.target for mount in self.mounts]

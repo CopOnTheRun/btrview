@@ -94,7 +94,7 @@ class Btrfs:
             subvols.append(Subvolume(match_dict,self.mounts))
         return subvols
 
-    def subvolumes(self, root: bool, deleted: bool, unreachable: bool,) -> list[Subvolume]:
+    def subvolumes(self, root: bool, deleted: bool, unreachable: bool, snapshot: bool) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
         out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
@@ -107,14 +107,17 @@ class Btrfs:
         funcs: list[SubvolumeSieve] = []
         if not unreachable:
             funcs.append(lambda s: not (s.mounted or s.deleted or s.root_subvolume))
+        if not snapshot:
+            funcs.append(lambda s: s.snapshot and not s.root_subvolume)
         remove_subvols(subvols, funcs)
         return subvols
 
-    def forest(self, snapshots = False, root = True, deleted = False, unreachable = True,) -> list[Tree]:
+    def forest(self, snapshots = False, root = True, deleted = False,
+               unreachable = True, snapshot = True) -> list[Tree]:
         """Returns a forest of subvolumes with parent/child relationships
         being based on subvolume layout or snapshots."""
         kind = "snap" if snapshots else "subvol"
-        return get_forest(self.subvolumes(root, deleted, unreachable), kind)
+        return get_forest(self.subvolumes(root, deleted, unreachable, snapshot), kind)
         
     def __str__(self) -> str:
         return f"{self.label or self.uuid}"
