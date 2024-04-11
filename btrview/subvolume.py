@@ -23,7 +23,7 @@ class Mount:
     fsroot: PurePath
     target: Path
 
-    def resolve(self, path: str) -> Path:
+    def resolve(self, path: Path) -> Path:
         """Returns the resolved path of another path"""
         fsroot_str = str(self.fsroot)
         target_str = str(self.target)
@@ -87,7 +87,7 @@ class Subvolume:
                 parent = None
         return parent
 
-    def id(self, p_type: str) -> str | None:
+    def id(self, p_type: str) -> str:
         """Returns subvolume UUID or ID string"""
         match p_type:
             case "snap":
@@ -95,7 +95,7 @@ class Subvolume:
             case "subvol":
                 ID = self["Subvolume ID"]
             case _:
-                ID = None
+                ID = self["UUID"]
         return ID
 
     @classmethod
