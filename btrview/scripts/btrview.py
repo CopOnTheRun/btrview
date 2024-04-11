@@ -43,12 +43,7 @@ def parser() -> argparse.ArgumentParser:
 def main():
     check_root()
     args = parser().parse_args()
-    root = "root" in args.exclude
-    deleted = "deleted" in args.exclude
-    unreachable = "unreachable" in args.exclude
-    snapshot = "snapshot" in args.exclude
-    output = logic(args.labels, root, deleted, unreachable, snapshot,
-                   args.property, args.fold, args.export)
+    output = logic(args.labels, args.exclude, args.property, args.fold, args.export)
     print(output)
  
 if __name__ == "__main__":
