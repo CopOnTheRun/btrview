@@ -1,13 +1,21 @@
 """Subvolume Classes and errors."""
 import re
 from pathlib import Path, PurePath
-from typing import Self
+from typing import Self,TypedDict,Required
 from dataclasses import dataclass
 
 from btrview.utils import run
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
+
+BtrDict = TypedDict("BtrDict", {
+    "Name": Required[str],
+    "UUID": Required[str],
+    "Subvolume ID": Required[str],
+    "Parent UUID": str | None,
+    "btrfs Path": str | None,
+    }, total = False)
 
 @dataclass(frozen=True)
 class Mount:
@@ -30,7 +38,7 @@ class Mount:
 
 class Subvolume:
     """Class representing a btrfs subvolume"""
-    def __init__(self, props: dict[str,str|None], mounts: tuple[Mount, ...],
+    def __init__(self, props: BtrDict, mounts: tuple[Mount, ...],
                  deleted: bool = False, show: bool = False) -> None:
         self.props = props
         self.mounts = mounts
@@ -105,7 +113,7 @@ class Subvolume:
         return cls(props, mounts, show = True)
 
     @classmethod
-    def _run_cmd(cls, cmd: str) -> dict[str, str | None]:
+    def _run_cmd(cls, cmd: str) -> BtrDict:
         """Runs the shell command and returns the prop dictionary
         if the command doesn't error"""
         out = run(cmd)
@@ -115,7 +123,7 @@ class Subvolume:
         return props
 
     @classmethod
-    def _get_props(cls, btrfs_show_text: str) -> dict[str, str | None]:
+    def _get_props(cls, btrfs_show_text: str) -> BtrDict:
         """Creates btrfs prop dict based on the output of 
         btrfs subvolume show."""
         subvol = {}
