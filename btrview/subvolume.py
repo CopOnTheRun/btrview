@@ -1,21 +1,13 @@
 """Subvolume Classes and errors."""
-import re
 from pathlib import Path, PurePath
-from typing import Self,TypedDict,Required
+from typing import Self
 from dataclasses import dataclass
 
 from btrview.utils import run
+from btrview.btr_dict import BtrDict, BtrfsDict
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
-
-BtrDict = TypedDict("BtrDict", {
-    "Name": Required[str],
-    "UUID": Required[str],
-    "Subvolume ID": Required[str],
-    "Parent UUID": str | None,
-    "btrfs Path": str | None,
-    }, total = False)
 
 @dataclass(frozen=True)
 class Mount:
@@ -113,6 +105,11 @@ class Subvolume:
         return cls(props, mounts, show = True)
 
     @classmethod
+    def from_list(cls, list_str: str, mounts: tuple[Mount, ...]) -> Self:
+        props = BtrfsDict.from_list(list_str).btr_dict
+        return cls(props, mounts)
+
+    @classmethod
     def from_deleted(cls, UUID: str) -> Self:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
         props: BtrDict = {"UUID":UUID,"Subvolume ID":UUID, "Name":UUID}
@@ -125,24 +122,8 @@ class Subvolume:
         out = run(cmd)
         if out.returncode != 0:
             raise NotASubvolumeError
-        props = cls._get_props(out.stdout)
+        props = BtrfsDict.from_show(out.stdout).btr_dict
         return props
-
-    @classmethod
-    def _get_props(cls, btrfs_show_text: str) -> BtrDict:
-        """Creates btrfs prop dict based on the output of 
-        btrfs subvolume show."""
-        subvol = {}
-        lines = btrfs_show_text.splitlines()
-        subvol["btrfs Path"] = ("/" + lines[0]).replace("//","/")
-        for line in lines[1:]:
-            if re.search(r":\s+",line):
-                k,v = line.split(":",maxsplit=1)
-                k = k.strip()
-                v = v.strip()
-                v = None if v == "-" else v
-                subvol[k] = v
-        return subvol
 
     @staticmethod
     def is_btrfs(path: Path) -> bool:

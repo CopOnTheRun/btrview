@@ -1,6 +1,5 @@
 """Classes and functions to interact with a btrfs filesystem."""
 import json
-import re
 from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Self, Callable, TypeAlias, Iterable
@@ -101,25 +100,10 @@ class Btrfs:
         deleted_subvols = [Subvolume.from_deleted(puuid) for puuid in deleted_puuids]
         return deleted_subvols
 
-    def _parse_subvol_list(self, list_str: str) ->list[Subvolume]:
+    def _parse_subvol_list(self, list_str: str) -> list[Subvolume]:
         """Turns output from `btrfs subvolume list` command into a list of subvolumes"""
-        subvols = []
-        keys = "ID,gen,cgen,parent,parent_uuid,received_uuid,uuid".split(",")
-        vals = "Subvolume ID,Generation,Gen at creation,Parent ID,Parent UUID,Received UUID,UUID".split(",")
-        key_dict = {key:val for key,val in zip(keys,vals)}
-        for line in list_str.splitlines():
-            match_dict = {}
-            for key,val in key_dict.items():
-                match = re.search(f"\\b{key}\\s+(\\S+)",line)
-                if match and match.group(1) == "-":
-                    match_dict[val] = None
-                elif match :
-                    match_dict[val] = match.group(1)
-            path_match = re.search(r"path\s*(.*)",line).group(1).removeprefix("<FS_TREE>/")
-            match_dict["btrfs Path"] = Path(f"/{path_match}")
-            match_dict["Name"] = match_dict["btrfs Path"].name
-            subvols.append(Subvolume(match_dict,self.mounts))
-        return subvols
+        list_lines = list_str.splitlines()
+        return [Subvolume.from_list(line, self.mounts) for line in list_lines]
 
     def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
