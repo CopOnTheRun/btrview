@@ -13,12 +13,11 @@ class ForestDisplay:
     def __init__(self, subvolumes: list[Subvolume]):
         self.subvolumes = subvolumes
 
-    def display_forest(self, kind, prop, fold):
+    def display_forest(self, kind, prop, fold) -> Group:
         tree = get_forest(self.subvolumes,kind)
         sorted_forest = self.sort_forest(tree)
         rich_forest = self.rich_forest(sorted_forest, prop, fold)
         return Group(*rich_forest)
-
 
     def sort_tree(self, tree: treelib.Tree,
                   new_tree: treelib.Tree | None = None) -> treelib.Tree:
@@ -85,14 +84,22 @@ class ForestDisplay:
             rich_str = f"[grey58]{rich_str}[/grey58]"
         return rich_str
 
-def create_rich_table(title: str, subvol_forest: Group,snapshot_forest: Group) -> Table:
-    """Creates a table from a subvolume forest and snapshot forest"""
-    forest_table = Table(title = f"{title}", show_edge=False,
-                         show_lines=False,expand=True,box=None,padding=0)
-    forest_table.add_column("Subvolume Tree:")
-    forest_table.add_column("Snapshot Tree:")
-    forest_table.add_row(subvol_forest,snapshot_forest)
-    return forest_table
+class RichTreeTable:
+    default_table_stle = {"show_edge": False, "show_lines" : False, "expand" : True, "box" : None, "padding" : 0}
+    def __init__(self, title: str,subvol_forest, snapshot_forest):
+        self.title = title
+        self.subvol_forest = subvol_forest
+        self.snapshot_forest = snapshot_forest
+
+    def create_rich_table(self, **kwargs) -> Table:
+        """Creates a table from a subvolume forest and snapshot forest"""
+        if not kwargs:
+            kwargs = self.default_table_stle
+        forest_table = Table(title = f"{self.title}", **kwargs)
+        forest_table.add_column("Subvolume Tree:")
+        forest_table.add_column("Snapshot Tree:")
+        forest_table.add_row(self.subvol_forest,self.snapshot_forest)
+        return forest_table
 
 def logic(labels: list[str], remove: tuple[str,...], prop: str, fold: int, export: str) -> str:
     """Constructs Rich output based on the parameters given."""
@@ -104,7 +111,7 @@ def logic(labels: list[str], remove: tuple[str,...], prop: str, fold: int, expor
         subvol_display = display.display_forest("subvol", prop, fold)
         snap_display = display.display_forest("snap", prop, fold)
 
-        forest_table = create_rich_table(str(fs),snap_display,subvol_display)
+        forest_table = RichTreeTable(str(fs), subvol_display, snap_display).create_rich_table()
         tables.append(forest_table)
     return create_table_output(tables, export)
 
