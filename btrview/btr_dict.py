@@ -4,13 +4,33 @@ from pathlib import Path, PurePath
 from typing import Self,TypedDict,Required
 from datetime import datetime
 from uuid import UUID
+from dataclasses import dataclass
+
+@dataclass
+class Generation:
+    """A class representing a btrfs generation"""
+    generation: int
+
+    def __lt__(self, other: Self):
+        return self.generation < other.generation
 
 BtrDict = TypedDict("BtrDict", {
-    "Name": Required[str],
-    "UUID": Required[str],
-    "Subvolume ID": Required[str],
-    "Parent UUID": UUID | None,
     "btrfs Path": PurePath,
+    "Name": Required[str],
+    "Subvolume ID": Required[str],
+    "UUID": Required[UUID],
+    "Parent UUID": UUID | None,
+    "Received UUID": UUID | None,
+    "Creation time": datetime,
+    "Send time": datetime,
+    "Receive time":datetime | None,
+    "Generation": Generation,
+    "Gen at creation": Generation,
+    "Parent ID": str,
+    "Top level ID": str,
+    "Flags": str,
+    "Send transid": str,
+    "Receive transid": str,
     }, total = False)
 
 class BtrfsDict:
@@ -30,7 +50,7 @@ class BtrfsDict:
             case "UUID"|"Received UUID"| "Parent UUID":
                 return UUID(dict_value)
             case "Generation"|"Gen at Creation":
-                return str(dict_value)
+                return Generation(int(dict_value))
             case "btrfs Path":
                 return PurePath(dict_value)
             case _:
@@ -79,4 +99,3 @@ class BtrfsDict:
         """Creates a btrfs prop dict from a UUID"""
         str_dict = {"UUID":uuid,"Name":uuid,"Subvolume ID":uuid}
         return cls(str_dict)
-
