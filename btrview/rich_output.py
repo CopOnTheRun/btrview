@@ -1,4 +1,4 @@
-"""Functions to construct Rich objects for output to the terminal"""
+"""Functions and classes to construct Rich objects for output to the terminal"""
 import treelib
 
 from rich.tree import Tree as RichTree
@@ -10,10 +10,12 @@ from btrview.btrfs import Btrfs, get_forest
 from btrview.subvolume import Subvolume
 
 class ForestDisplay:
+    """A class for working with and displaying Rich formatted trees"""
     def __init__(self, subvolumes: list[Subvolume]):
         self.subvolumes = subvolumes
 
-    def display_forest(self, kind, prop, fold) -> Group:
+    def display_forest(self, kind: str, prop: str, fold: int) -> Group:
+        """Return the concatenated trees as a Rich Group"""
         tree = get_forest(self.subvolumes,kind)
         sorted_forest = self.sort_forest(tree)
         rich_forest = self.rich_forest(sorted_forest, prop, fold)
@@ -21,6 +23,7 @@ class ForestDisplay:
 
     def sort_tree(self, tree: treelib.Tree,
                   new_tree: treelib.Tree | None = None) -> treelib.Tree:
+        """Sort a tree by the size of its subtree"""
         if new_tree is None:
             root = tree.get_node(tree.root)
             new_tree = treelib.Tree()
@@ -36,6 +39,7 @@ class ForestDisplay:
         return new_tree
 
     def sort_forest(self, forest: list[treelib.Tree]) -> list[treelib.Tree]:
+        """Sort a forest by the size of its trees"""
         sort_func = lambda t: t.size()
         forest = [self.sort_tree(t) for t in forest]
         return sorted(forest, key = sort_func, reverse=True)
@@ -85,6 +89,7 @@ class ForestDisplay:
         return rich_str
 
 class RichTreeTable:
+    """Class to piece together Filesystem and Subvolume trees into a cohesive display"""
     default_table_stle = {"show_edge": False, "show_lines" : False, "expand" : True, "box" : None, "padding" : 0}
     def __init__(self, title: str,subvol_forest, snapshot_forest):
         self.title = title
@@ -116,6 +121,7 @@ def logic(labels: list[str], remove: tuple[str,...], prop: str, fold: int, expor
     return create_table_output(tables, export)
 
 def create_table_output(tables: list[Table], fmt: str | None) -> str:
+    """Export the parameter tables to a certain format"""
     console = Console(record = True)
     captures = []
     for table in tables:
