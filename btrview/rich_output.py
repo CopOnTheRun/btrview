@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.style import Style
 
-from btrview.btrfs import Btrfs, get_forest
+from btrview.btrfs import Btrfs, get_forest, SubvolumeSieve
 from btrview.subvolume import Subvolume
 
 TreeSorter = Callable[[treelib.Tree, treelib.Node], Any]
@@ -91,11 +91,13 @@ class ForestDisplay:
             rich_str = f"{subvol[prop]}"
         else:
             rich_str = f"{subvol}"
-        if subvol.mount_points:
+
+        sieves = SubvolumeSieve.SIEVES
+        if not sieves["non-mounts"](subvol):
             rich_str = f"[bold]{rich_str}[/bold]"
-        if subvol.deleted:
+        if sieves["deleted"](subvol):
             rich_str = f"[red1]{rich_str}[/red1]"
-        if not subvol.mounted:
+        if sieves["unreachable"](subvol):
             rich_str = f"[grey58]{rich_str}[/grey58]"
         return rich_str
 
@@ -150,4 +152,3 @@ def create_table_output(tables: list[Table], fmt: str | None) -> str:
         case _:
             out_str = "".join(captures)
     return out_str
-
