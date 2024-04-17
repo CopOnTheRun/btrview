@@ -18,6 +18,7 @@ class SubvolumeSieve:
             "root": lambda s: s.root_subvolume,
             "snapshot": lambda s: s.snapshot and not s.root_subvolume,
             "unreachable": lambda s: not (s.mounted or s.deleted or s.root_subvolume),
+            "non-mounts": lambda s: not s.mount_points
             }
 
     def __init__(self, subvolumes: list[Subvolume]) -> None:
@@ -77,6 +78,14 @@ class Btrfs:
         #cast to tuple makes for easier referencing, also has the benefit of
         #preventing direct access to the set object
         return tuple(self._all_mounts[self.uuid])
+
+    @property
+    def default_subvolume(self) -> str:
+        """Return the default subvolume for the filesystem"""
+        mount = self.mounts[0]
+        out = run(f"btrfs subvolume get-default {mount.target}")
+        subvol_id = out.stdout.split()[1]
+        return subvol_id
 
     @classmethod
     def get_filesystems(cls, labels:list[str] | None = None) -> list[Self]:
