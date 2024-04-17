@@ -28,7 +28,6 @@ class ForestDisplay:
             root = tree.get_node(tree.root)
             new_tree = treelib.Tree()
             new_tree.add_node(root)
-        subtrees = [tree.subtree(t.identifier) for t in tree.children(tree.root)]
         children = tree.children(tree.root)
         sort_func = lambda n: tree.subtree(n.identifier).size()
         sorted_children = sorted(children, key = sort_func,reverse=True)
@@ -40,9 +39,14 @@ class ForestDisplay:
 
     def sort_forest(self, forest: list[treelib.Tree]) -> list[treelib.Tree]:
         """Sort a forest by the size of its trees"""
-        sort_func = lambda t: t.size()
-        forest = [self.sort_tree(t) for t in forest]
-        return sorted(forest, key = sort_func, reverse=True)
+        pseudo_tree = treelib.Tree()
+        pseudo_tree.create_node()
+        pseudo_root = pseudo_tree.root
+        for tree in forest:
+            pseudo_tree.paste(pseudo_root,tree)
+        sorted_pseudo = self.sort_tree(pseudo_tree)
+        forest = [sorted_pseudo.subtree(node.identifier) for node in sorted_pseudo.children(pseudo_root)]
+        return forest
 
     def treelib_to_rich(self, tree: treelib.Tree,
                         node: treelib.Node,
