@@ -17,7 +17,7 @@ class SubvolumeSieve:
             "deleted": lambda s: s.deleted,
             "root": lambda s: s.root_subvolume,
             "snapshot": lambda s: s.snapshot and not s.root_subvolume,
-            "unreachable": lambda s: not (s.mounted or s.deleted or s.root_subvolume),
+            "unreachable": lambda s: not (s.mounted or s.deleted),
             "non-mounts": lambda s: not s.mount_points
             }
 
