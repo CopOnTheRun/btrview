@@ -9,6 +9,7 @@ from rich.console import Group
 from rich.console import Console
 from rich.table import Table
 from rich.style import Style
+from rich.text import Text
 
 from btrview.btrfs import Btrfs, get_forest, SubvolumeSieve
 from btrview.subvolume import Subvolume
@@ -85,7 +86,7 @@ class ForestDisplay:
             r_forest.append(rich_tree)
         return r_forest
 
-    def rich_subvol(self, subvol: Subvolume, prop: str) -> str:
+    def rich_subvol(self, subvol: Subvolume, prop: str) -> Text:
         """Returns a rich formated string from subvolume output"""
         if prop and subvol[prop] is not None:
             rich_str = f"{subvol[prop]}"
@@ -93,13 +94,16 @@ class ForestDisplay:
             rich_str = f"{subvol}"
 
         sieves = SubvolumeSieve.SIEVES
+        styles = []
         if not sieves["non-mounts"](subvol):
-            rich_str = f"[bold]{rich_str}[/bold]"
+            styles.append(Style(bold=True))
         if sieves["deleted"](subvol):
-            rich_str = f"[red1]{rich_str}[/red1]"
+            styles.append(Style(color="red1"))
         if sieves["unreachable"](subvol):
-            rich_str = f"[grey58]{rich_str}[/grey58]"
-        return rich_str
+            styles.append(Style(color="grey58"))
+
+        style = Style.combine(styles) if styles else ""
+        return Text(rich_str, style)
 
 class RichTreeTable:
     """Class to piece together Filesystem and Subvolume trees into a cohesive display"""
