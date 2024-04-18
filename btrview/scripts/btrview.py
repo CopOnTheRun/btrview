@@ -3,7 +3,7 @@ import argparse
 
 import btrview
 from btrview.utils import check_root
-from btrview.rich_output import logic
+from btrview.rich_output import logic,SORT_FUNCS
 from btrview.btrfs import SubvolumeSieve
 
 def parser() -> argparse.ArgumentParser:
@@ -29,6 +29,17 @@ def parser() -> argparse.ArgumentParser:
             help = "The subvolume property to print out in the tree. These are the keys from the `btrfs subvolume show` command.",)
 
     arg_parser.add_argument(
+            "--sort",
+            help = "How to sort subvolumes.",
+            choices = SORT_FUNCS.keys(),
+            default = "size")
+
+    arg_parser.add_argument(
+            "--ascending",
+            help = "Sort ascending instead of descending",
+            action = "store_true")
+
+    arg_parser.add_argument(
             "--fold",
             help = "Fold child output greater than N lines.",
             metavar = "N",
@@ -44,7 +55,8 @@ def parser() -> argparse.ArgumentParser:
 def main():
     check_root()
     args = parser().parse_args()
-    output = logic(args.labels, args.exclude, args.property, args.fold, args.export)
+    output = logic(args.labels, args.exclude, args.property, 
+                   args.fold, args.export, SORT_FUNCS[args.sort], not args.ascending)
     print(output)
  
 if __name__ == "__main__":

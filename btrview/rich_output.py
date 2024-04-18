@@ -16,20 +16,28 @@ from btrview.subvolume import Subvolume
 
 TreeSorter = Callable[[treelib.Tree, treelib.Node], Any]
 
+SORT_FUNCS: dict[str, TreeSorter]= {
+        "size": lambda t,n: t.subtree(n.identifier).size(),
+        "Creation time": lambda t,n: n.data["Creation time"],
+        "Generation": lambda t,n: n.data["Generation"],
+        "Name": lambda t,n: n.data["Name"]}
+
 class ForestDisplay:
     """A class for working with and displaying Rich formatted trees"""
     def __init__(self, subvolumes: list[Subvolume]):
         self.subvolumes = subvolumes
 
-    def display_forest(self, kind: str, prop: str, fold: int, sort_func: TreeSorter) -> Group:
+    def display_forest(self, kind: str, prop: str, fold: int,
+                       sort_func: TreeSorter, reverse: bool) -> Group:
         """Return the concatenated trees as a Rich Group"""
         forest = get_forest(self.subvolumes, kind)
-        sorted_forest = self.sort_forest(forest, sort_func)
+        sorted_forest = self.sort_forest(forest, sort_func, reverse)
         rich_forest = self.rich_forest(sorted_forest, prop, fold)
         return Group(*rich_forest)
 
     def sort_tree(self, tree: treelib.Tree,
                   sort_func: TreeSorter,
+                  reverse: bool,
                   new_tree: treelib.Tree | None = None) -> treelib.Tree:
         """Sort a tree by the specified sorting function"""
         if new_tree is None:
@@ -38,21 +46,21 @@ class ForestDisplay:
             new_tree.add_node(root)
         children = tree.children(tree.root)
         sort_partial = partial(sort_func, tree)
-        sorted_children = sorted(children, key = sort_partial ,reverse=True)
+        sorted_children = sorted(children, key = sort_partial, reverse = reverse)
         for child in sorted_children:
             new_tree.add_node(child,tree.root)
             subtree = tree.subtree(child.identifier)
-            self.sort_tree(subtree, sort_func, new_tree)
+            self.sort_tree(subtree, sort_func, reverse, new_tree)
         return new_tree
 
-    def sort_forest(self, forest: list[treelib.Tree], sort_func: TreeSorter) -> list[treelib.Tree]:
+    def sort_forest(self, forest: list[treelib.Tree], sort_func: TreeSorter, reverse) -> list[treelib.Tree]:
         """Sort a forest by the specified sorting function"""
         pseudo_tree = treelib.Tree()
         pseudo_tree.create_node()
         pseudo_root = pseudo_tree.root
         for tree in forest:
             pseudo_tree.paste(pseudo_root,tree)
-        sorted_pseudo = self.sort_tree(pseudo_tree, sort_func)
+        sorted_pseudo = self.sort_tree(pseudo_tree, sort_func, reverse)
         sorted_forest = [sorted_pseudo.subtree(node.identifier) for node in sorted_pseudo.children(pseudo_root)]
         return sorted_forest
 
@@ -123,16 +131,16 @@ class RichTreeTable:
         forest_table.add_row(self.subvol_forest,self.snapshot_forest)
         return forest_table
 
-def logic(labels: list[str], remove: tuple[str,...], prop: str, fold: int, export: str) -> str:
+def logic(labels: list[str], remove: tuple[str,...], prop: str, 
+          fold: int, export: str, sort_func:TreeSorter, reverse: bool) -> str:
     """Constructs Rich output based on the parameters given."""
     filesystems = Btrfs.get_filesystems(labels)
     tables = []
-    sort_func: TreeSorter = lambda t,n: t.subtree(n.identifier).size()
     for fs in filesystems:
         subvols = fs.subvolumes(remove)
         display = ForestDisplay(subvols)
-        subvol_display = display.display_forest("subvol", prop, fold, sort_func)
-        snap_display = display.display_forest("snap", prop, fold, sort_func)
+        subvol_display = display.display_forest("subvol", prop, fold, sort_func, reverse)
+        snap_display = display.display_forest("snap", prop, fold, sort_func, reverse)
 
         forest_table = RichTreeTable(str(fs), subvol_display, snap_display).create_rich_table()
         tables.append(forest_table)
