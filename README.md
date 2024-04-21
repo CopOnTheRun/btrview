@@ -15,9 +15,15 @@ Wondering what the difference between the subvolume and snapshot tree is? [Check
 
 ## Installation:
 
-If you have pip installed you can grab btrview from the python package index with `pip install btrview`. Installing via pip will add the `btrview` command to your path allowing you to run the command from anywhere on the system. 
+Btrview relies on the following dependencies:
+* python 3.11 or greater
+* btrfs-progs
+* python-treelib
+* python-rich
 
-If you don't feel like installing via pip you can download it via `git clone https://github.com/CopOnTheRun/btrview` then `cd btrview`. From within the btrview directory you can run the script with `python -m btrview`. Note that if you clone the repository you'll need to make sure you have [`treelib`](https://treelib.readthedocs.io/en/latest/) installed on your system.
+If you have pip installed you can grab btrview from the python package index with `pip install btrview`. Using pip to install btrview will also install the required python dependencies. In addition installing via pip will add the `btrview` command to your path allowing you to run the command from anywhere on the system. 
+
+If you don't feel like installing via pip you can download it via `git clone https://github.com/CopOnTheRun/btrview` then `cd btrview`. From within the btrview directory you can run the script with `python -m btrview`. Note that if you clone the repository you'll need to make sure you have all the dependencies installed already.
 
 ## Some Qs and As:
 
