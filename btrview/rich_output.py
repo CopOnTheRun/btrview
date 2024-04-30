@@ -115,7 +115,7 @@ class ForestDisplay:
 
 class RichTreeTable:
     """Class to piece together Filesystem and Subvolume trees into a cohesive display"""
-    default_table_stle = {"show_edge": False, "show_lines" : False, "expand" : True, "box" : None, "padding" : 0}
+    default_table_style = {"show_edge": False, "show_lines" : False, "box" : None, }
     def __init__(self, title: str,subvol_forest, snapshot_forest):
         self.title = title
         self.subvol_forest = subvol_forest
@@ -124,7 +124,7 @@ class RichTreeTable:
     def create_rich_table(self, **kwargs) -> Table:
         """Creates a table from a subvolume forest and snapshot forest"""
         if not kwargs:
-            kwargs = self.default_table_stle
+            kwargs = self.default_table_style
         forest_table = Table(title = f"{self.title}", **kwargs)
         forest_table.add_column("Subvolume Tree:")
         forest_table.add_column("Snapshot Tree:")
