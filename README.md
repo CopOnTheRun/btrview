@@ -7,7 +7,7 @@ Call btrview with a label to get an overview of the subvolume and snapshot tree 
 ```
 > sudo btrview --labels HDDs --fold 5
 ```
-![btrview output](images/output.svg)
+![btrview output](https://github.com/CopOnTheRun/btrview/raw/main/images/output.svg)
 
 Subvolumes that are mounted (in fstab or somehow else) are in bold, those that are grey are subvolumes that aren't currently reachable on the filesystem, and subvolumes in red (not shown here) are not currently on the filesytem. This could be because they're deleted, or maybe its child subvolume was `btrfs received` from another filesystem.
 
