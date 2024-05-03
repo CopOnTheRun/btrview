@@ -24,6 +24,10 @@ dev = ["bumpver","mypy","pip-tools"]
 [project.scripts]
 btrview = "btrview.scripts.btrview:main"
 
+[project.urls]
+Repository = "https://github.com/CopOnTheRun/btrview"
+Issues = "https://github.com/CopOnTheRun/btrview/issues"
+
 [build-system]
 requires      = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
