@@ -42,7 +42,7 @@ tag = true
 push = false
 
 [tool.setuptools]
-packages = ["btrview"]
+packages = ["btrview","btrview.scripts"]
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = [
