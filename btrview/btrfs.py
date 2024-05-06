@@ -135,11 +135,17 @@ class Btrfs:
         return f"{self.label or self.uuid}"
 
     @staticmethod
-    def is_btrfs(path: Path) -> bool:
+    def is_btrfs(path: Path | str) -> bool:
         """Returns true if path is part of a btrfs filesystem."""
-        response = run(f"btrfs filesystem usage '{path}'")
-        return response.returncode == 0
-
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} doesn't exist.")
+        try:
+            btrfsutil.subvolume_info(path)
+        except btrfsutil.BtrfsUtilError as e:
+            if e.btrfsutilerror == btrfsutil.ERROR_NOT_BTRFS:
+                return False
+        return True
 
 def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
