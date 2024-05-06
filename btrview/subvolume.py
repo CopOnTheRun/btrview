@@ -125,12 +125,6 @@ class Subvolume:
         props = BtrfsDict.from_show(out.stdout).btr_dict
         return props
 
-    @staticmethod
-    def is_btrfs(path: Path) -> bool:
-        """Returns true if path is part of a btrfs filesystem."""
-        response = run(f"btrfs filesystem usage '{path}'")
-        return response.returncode == 0
-
     def __getitem__(self, key: str) -> str | None:
         """Returns the item from the props dictionary, but instead
         of throwing a key error, returns None"""
