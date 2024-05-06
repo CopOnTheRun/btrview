@@ -5,6 +5,7 @@ from pathlib import Path, PurePath
 from typing import Self, Callable, TypeAlias, Iterable
 
 from treelib import Tree
+import btrfsutil
 
 from btrview.utils import run
 from btrview.subvolume import Subvolume, Mount
@@ -83,9 +84,8 @@ class Btrfs:
     def default_subvolume(self) -> str:
         """Return the default subvolume for the filesystem"""
         mount = self.mounts[0]
-        out = run(f"btrfs subvolume get-default {mount.target}")
-        subvol_id = out.stdout.split()[1]
-        return subvol_id
+        default = btrfsutil.get_default_subvolume(mount.target)
+        return str(default)
 
     @classmethod
     def get_filesystems(cls, labels:list[str] | None = None) -> list[Self]:
