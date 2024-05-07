@@ -45,11 +45,11 @@ class BtrfsDict:
         if dict_value == "-":
             return None
         match dict_key:
-            case "Creation Time"|"Send Time"|"Receive Time":
+            case "Creation time"|"Send time"|"Receive time":
                 return datetime.fromisoformat(dict_value)
             case "UUID"|"Received UUID"| "Parent UUID":
                 return UUID(dict_value)
-            case "Generation"|"Gen at Creation":
+            case "Generation"|"Gen at creation":
                 return Generation(int(dict_value))
             case "btrfs Path":
                 return PurePath(dict_value)
