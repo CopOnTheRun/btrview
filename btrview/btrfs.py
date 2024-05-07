@@ -109,17 +109,19 @@ class Btrfs:
         deleted_subvols = [Subvolume.from_deleted(puuid) for puuid in deleted_puuids]
         return deleted_subvols
 
-    def _parse_subvol_list(self, list_str: str) -> list[Subvolume]:
-        """Turns output from `btrfs subvolume list` command into a list of subvolumes"""
-        list_lines = list_str.splitlines()
-        return [Subvolume.from_list(line, self.mounts) for line in list_lines]
+    def _subvol_info_iter(self,) -> list[Subvolume]:
+        """Returns a list of subvolume from a SubvolumeIterator"""
+        subvol_iter = btrfsutil.SubvolumeIterator(self.mounts[0].target,info = True, top=5)
+        subvols = []
+        for _, info in subvol_iter:
+            subvols.append(Subvolume.from_info(info, self.mounts))
+        return subvols
 
     def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
         subvols = [] if "root" in remove else [Subvolume.from_ID("5",mount_point, self.mounts)]
-        out = run(f"sudo btrfs subvolume list -apcguqR {mount_point}")
-        subvols.extend(self._parse_subvol_list(out.stdout))
+        subvols.extend(self._subvol_info_iter())
         subvols.extend(self._get_deleted_subvols(subvols))
         sieve = SubvolumeSieve(subvols)
 

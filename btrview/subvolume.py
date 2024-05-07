@@ -3,7 +3,8 @@ from pathlib import Path, PurePath
 from typing import Self
 from dataclasses import dataclass
 
-from btrview.utils import run
+import btrfsutil
+
 from btrview.btr_dict import BtrDict, BtrfsDict
 
 class NotASubvolumeError(NotADirectoryError):
@@ -31,11 +32,10 @@ class Mount:
 class Subvolume:
     """Class representing a btrfs subvolume"""
     def __init__(self, props: BtrDict, mounts: tuple[Mount, ...],
-                 deleted: bool = False, show: bool = False) -> None:
+                 deleted: bool = False) -> None:
         self.props = props
         self.mounts = mounts
         self.deleted = deleted
-        self._show = show
 
     @property
     def paths(self) -> list[Path]:
@@ -91,22 +91,18 @@ class Subvolume:
         return ID
 
     @classmethod
-    def from_UUID(cls, uuid: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
-        """Creates subvolume from the subvolumes UUID and any path on the filesystem"""
-        cmd = f"btrfs subvolume show -u {uuid} {path}"
-        props = cls._run_cmd(cmd)
-        return cls(props, mounts, show = True)
-
-    @classmethod
     def from_ID(cls, ID: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
-        cmd = f"btrfs subvolume show -r {ID} {path}"
-        props = cls._run_cmd(cmd)
-        return cls(props, mounts, show = True)
+        info = btrfsutil.subvolume_info(path, int(ID))
+        return cls.from_info(info, mounts)
 
     @classmethod
-    def from_list(cls, list_str: str, mounts: tuple[Mount, ...]) -> Self:
-        props = BtrfsDict.from_list(list_str).btr_dict
+    def from_info(cls, info: btrfsutil.SubvolumeInfo, mounts: tuple[Mount, ...]) -> Self:
+        """Creates a subvolume for a SubvolumeInfo class"""
+        props = BtrfsDict.from_info(info).btr_dict
+        path_str = btrfsutil.subvolume_path(mounts[0].target, int(props["Subvolume ID"]))
+        props["btrfs Path"] = "/" / PurePath(path_str)
+        props["Name"] = props["btrfs Path"].name if path_str else "<FS_TREE>"
         return cls(props, mounts)
 
     @classmethod
@@ -114,16 +110,6 @@ class Subvolume:
         """Creates subvolume from subvolume's ID and any path on the filesystem"""
         props: BtrDict = {"UUID":UUID,"Subvolume ID":UUID, "Name":UUID}
         return cls(props, tuple(), deleted=True)
-
-    @classmethod
-    def _run_cmd(cls, cmd: str) -> BtrDict:
-        """Runs the shell command and returns the prop dictionary
-        if the command doesn't error"""
-        out = run(cmd)
-        if out.returncode != 0:
-            raise NotASubvolumeError
-        props = BtrfsDict.from_show(out.stdout).btr_dict
-        return props
 
     def __getitem__(self, key: str) -> str | None:
         """Returns the item from the props dictionary, but instead
@@ -134,19 +120,11 @@ class Subvolume:
             #just assume it's None for deleted subvols. #could cause problems
             #in that deleted Subvolumes won't throw KeyError
             return None
-        elif not self._show:
-            cmd = f"btrfs subvolume show -u {self['UUID']} {self.mounts[0].target}"
-            props = self._run_cmd(cmd)
-            self.props |= props
-            self._show = True
-        try:
-            return self.props[key]
-        except KeyError:
-            pass
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            raise KeyError(f"Subvolume has no attribute or key '{key}'")
+        else:
+            try:
+                return getattr(self, key)
+            except AttributeError:
+                raise KeyError(f"Subvolume has no attribute or key '{key}'")
 
     def __str__(self) -> str:
         string = self["Name"]
