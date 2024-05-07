@@ -22,7 +22,7 @@ BtrDict = TypedDict("BtrDict", {
     "Parent UUID": UUID | None,
     "Received UUID": UUID | None,
     "Creation time": datetime,
-    "Send time": datetime,
+    "Send time": datetime | None,
     "Receive time":datetime | None,
     "Generation": Generation,
     "Gen at creation": Generation,
@@ -57,7 +57,7 @@ class BtrfsDict:
                 return dict_value
 
     @classmethod
-    def cast_dict(cls, str_dict: dict[str,str]):
+    def cast_dict(cls, str_dict: dict[str,str]) -> BtrDict:
         """Casts the inputed dictionary into a properly typed btrfs dictionary"""
         new_dict = {}
         for key,val in str_dict.items():
