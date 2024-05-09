@@ -4,7 +4,7 @@ from typing import Self
 from dataclasses import dataclass
 
 from btrfsutil import SubvolumeInfo, subvolume_info, subvolume_path
-from btrview.btr_dict import BaseInfo, TypedInfo, BTRDICT, BASE
+from btrview.typed_info import BaseInfo, TypedInfo, BTRDICT, BASE
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
