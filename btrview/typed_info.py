@@ -80,9 +80,9 @@ class TypedInfo(BaseInfo):
     otime: datetime
 
     @classmethod
-    def from_info(cls, path:str, info: SubvolumeInfo):
+    def from_info(cls, path: str, info: SubvolumeInfo):
         kw_args = {}
-        kw_args["path"] = PurePath(path)
+        kw_args["path"] = PurePath("/" + path)
         kw_args["name"] = kw_args["path"].name or "<FS_TREE>"
         for attr in info.__match_args__:
             val = getattr(info, attr)
