@@ -39,7 +39,7 @@ class Subvolume:
         self.deleted = deleted
 
     @property
-    def paths(self) -> list[Path]:
+    def fs_paths(self) -> list[Path]:
         """Returns all the reachable paths of the Subvolume"""
         if self["Path"] is None:
             return []
@@ -51,7 +51,7 @@ class Subvolume:
     @property
     def mounted(self) -> bool:
         """Returns whether the subvolume is reachable via the filesystem"""
-        return bool(self.paths)
+        return bool(self.fs_paths)
 
     @property
     def root_subvolume(self) -> bool:
@@ -67,7 +67,7 @@ class Subvolume:
     def mount_points(self) -> tuple[Path, ...]:
         """Returns mount points of Subvolume"""
         targets = [mount.target for mount in self.mounts]
-        return tuple(path for path in self.paths if path in targets)
+        return tuple(path for path in self.fs_paths if path in targets)
 
     def parent(self, p_type: str) -> str | None:
         """Returns parent UUID or ID string"""
