@@ -21,7 +21,7 @@ Btrview relies on the following dependencies:
 * python-treelib
 * python-rich
 
-The easiest way to download btrview is to use [pipx](https://pipx.pypa.io/stable/installation/) to download it from the python package index. Use the command `pipx --system-site-packages install btrview`. Using pipx to install btrview will also install the required python dependencies and add the `btrview` command to your path allowing you to run the command from anywhere on the system.
+The easiest way to download btrview is to use [pipx](https://pipx.pypa.io/stable/installation/) to download it from the python package index. Use the command `pipx install --system-site-packages btrview`. Using pipx to install btrview will also install the required python dependencies and add the `btrview` command to your path allowing you to run the command from anywhere on the system.
 
 If you don't feel like installing via pipx you can download it via `git clone https://github.com/CopOnTheRun/btrview` then `cd btrview`. From within the btrview directory you can run the script with `python -m btrview`. Note that if you clone the repository you'll need to make sure you have all the dependencies installed already.
 
