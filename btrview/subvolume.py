@@ -39,18 +39,11 @@ class Subvolume:
         self.deleted = deleted
 
     @property
-    def btrfs_path(self) -> PurePath:
-        if self.deleted:
-            return None
-        path_str = subvolume_path(self.mounts[0].target, self.info.id)
-        return "/" / PurePath(path_str)
-
-    @property
     def paths(self) -> list[Path]:
         """Returns all the reachable paths of the Subvolume"""
-        if self.btrfs_path is None:
+        if self["Path"] is None:
             return []
-        btr_path = self.btrfs_path
+        btr_path = self["Path"]
         paths = [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
         paths = [path for path in paths if path.exists()]
         return paths
