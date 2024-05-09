@@ -3,9 +3,8 @@ from pathlib import Path, PurePath
 from typing import Self
 from dataclasses import dataclass
 
-import btrfsutil
-
-from btrview.btr_dict import BtrDict, BtrfsDict
+from btrfsutil import SubvolumeInfo, subvolume_info, subvolume_path
+from btrview.btr_dict import BaseInfo, TypedInfo, BTRDICT, BASE
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
@@ -16,7 +15,7 @@ class Mount:
     fsroot: PurePath
     target: Path
 
-    def resolve(self, path: Path) -> Path:
+    def resolve(self, path: PurePath) -> Path:
         """Returns the resolved path of another path"""
         fsroot_str = str(self.fsroot)
         target_str = str(self.target)
@@ -31,18 +30,27 @@ class Mount:
 
 class Subvolume:
     """Class representing a btrfs subvolume"""
-    def __init__(self, props: BtrDict, mounts: tuple[Mount, ...],
-                 deleted: bool = False) -> None:
-        self.props = props
+    def __init__(self, 
+                 info: BaseInfo, 
+                 mounts: tuple[Mount, ...],
+                 deleted = False) -> None:
+        self.info = info
         self.mounts = mounts
         self.deleted = deleted
 
     @property
+    def btrfs_path(self) -> PurePath:
+        if self.deleted:
+            return None
+        path_str = subvolume_path(self.mounts[0].target, self.info.id)
+        return "/" / PurePath(path_str)
+
+    @property
     def paths(self) -> list[Path]:
         """Returns all the reachable paths of the Subvolume"""
-        if self["btrfs Path"] is None:
+        if self.btrfs_path is None:
             return []
-        btr_path = Path(self["btrfs Path"])
+        btr_path = self.btrfs_path
         paths = [mount.resolve(btr_path) for mount in self.mounts if btr_path.is_relative_to(mount.fsroot)]
         paths = [path for path in paths if path.exists()]
         return paths
@@ -72,7 +80,7 @@ class Subvolume:
         """Returns parent UUID or ID string"""
         match p_type:
             case "snap":
-                parent = self["Received UUID"] or self["Parent UUID"]
+                parent = self["Parent UUID"]
             case "subvol":
                 parent = self["Parent ID"]
             case _:
@@ -91,35 +99,29 @@ class Subvolume:
         return ID
 
     @classmethod
-    def from_ID(cls, ID: str, path: str | Path, mounts: tuple[Mount, ...]) -> Self:
-        """Creates subvolume from subvolume's ID and any path on the filesystem"""
-        info = btrfsutil.subvolume_info(path, int(ID))
-        return cls.from_info(info, mounts)
+    def from_info(cls, path: str, info: SubvolumeInfo, mounts: tuple[Mount, ...]) -> Self:
+        t_info = TypedInfo.from_info(path, info)
+        return cls(t_info, mounts)
 
     @classmethod
-    def from_info(cls, info: btrfsutil.SubvolumeInfo, mounts: tuple[Mount, ...]) -> Self:
-        """Creates a subvolume for a SubvolumeInfo class"""
-        props = BtrfsDict.from_info(info).btr_dict
-        path_str = btrfsutil.subvolume_path(mounts[0].target, int(props["Subvolume ID"]))
-        props["btrfs Path"] = "/" / PurePath(path_str)
-        props["Name"] = props["btrfs Path"].name if path_str else "<FS_TREE>"
-        return cls(props, mounts)
+    def from_ID(cls, path: str | Path, subvol_id: int, mounts: tuple[Mount, ...]) -> Self:
+        """Creates subvolume from subvolume's ID and any path on the filesystem"""
+        info = subvolume_info(path, subvol_id)
+        btrfs_path = subvolume_path(path, subvol_id)
+        return cls.from_info(btrfs_path, info, mounts)
 
     @classmethod
-    def from_deleted(cls, UUID: str) -> Self:
-        """Creates subvolume from subvolume's ID and any path on the filesystem"""
-        props: BtrDict = {"UUID":UUID,"Subvolume ID":UUID, "Name":UUID}
-        return cls(props, tuple(), deleted=True)
+    def from_deleted(cls, uuid: str):
+        info = TypedInfo.from_deleted(str(uuid))
+        return cls(info, (), True)
 
     def __getitem__(self, key: str) -> str | None:
-        """Returns the item from the props dictionary, but instead
-        of throwing a key error, returns None"""
-        if key in self.props:
-            return self.props[key]
-        elif self.deleted:
-            #just assume it's None for deleted subvols. #could cause problems
-            #in that deleted Subvolumes won't throw KeyError
-            return None
+        """Returns the item from TypedInfo object."""
+        if key in BTRDICT:
+            if not self.deleted:
+                return self.info[key]
+            else:
+                return self.info[key] if key in BASE else None
         else:
             try:
                 return getattr(self, key)
@@ -138,3 +140,5 @@ class Subvolume:
 
     def __eq__(self, other) -> bool:
         return self["UUID"] == other["UUID"]
+
+

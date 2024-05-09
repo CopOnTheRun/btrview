@@ -104,7 +104,7 @@ class Btrfs:
     def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
         """Returns a list of deleted subvolumes"""
         uuids: set[str] = {s.id("snap") for s in subvols}
-        puuids: set[str] = {s.parent("snap") for s in subvols if s.parent("snap")}
+        puuids: set[str | None] = {s.parent("snap") for s in subvols if s.parent("snap")}
         deleted_puuids = puuids - uuids
         deleted_subvols = [Subvolume.from_deleted(puuid) for puuid in deleted_puuids]
         return deleted_subvols
@@ -113,14 +113,15 @@ class Btrfs:
         """Returns a list of subvolume from a SubvolumeIterator"""
         subvol_iter = btrfsutil.SubvolumeIterator(self.mounts[0].target,info = True, top=5)
         subvols = []
-        for _, info in subvol_iter:
-            subvols.append(Subvolume.from_info(info, self.mounts))
+        for path, info in subvol_iter:
+            subvol = Subvolume.from_info(path, info, self.mounts)
+            subvols.append(subvol)
         return subvols
 
     def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
-        subvols = [] if "root" in remove else [Subvolume.from_ID("5",mount_point, self.mounts)]
+        subvols = [] if "root" in remove else [Subvolume.from_ID(mount_point,5, self.mounts)]
         subvols.extend(self._subvol_info_iter())
         subvols.extend(self._get_deleted_subvols(subvols))
         sieve = SubvolumeSieve(subvols)
