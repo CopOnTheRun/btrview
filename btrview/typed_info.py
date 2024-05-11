@@ -78,12 +78,16 @@ class TypedInfo(BaseInfo):
     rtransid: Generation
     ctime: datetime
     otime: datetime
+    rtime: datetime
+    stime: datetime
 
     @classmethod
     def from_info(cls, path: str, info: SubvolumeInfo):
         kw_args = {}
         kw_args["path"] = PurePath("/" + path)
         kw_args["name"] = kw_args["path"].name or "<FS_TREE>"
+        kw_args["rtime"] = info.rtime
+        kw_args["stime"] = info.stime
         for attr in info.__match_args__:
             val = getattr(info, attr)
             kw_args[attr] = cls._cast(attr, val)
