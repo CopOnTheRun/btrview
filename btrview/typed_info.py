@@ -9,26 +9,26 @@ from btrfsutil import SubvolumeInfo
 
 UUIDS = {"uuid": "UUID",
          "parent_uuid": "Parent UUID",
-         "received_uuid": "Received UUID"}
+         "received_uuid": "Received UUID",}
 
 TIMES = {"otime": "Creation time",
          "rtime": "Receieve time",
          "stime": "Send time",
-         "ctime": None}
+         "ctime": None,}
 
 GENS = {"generation": "Generation",
         "otransid": "Gen at creation",
         "rtransid": "Receive transid",
         "stransid": "Send transid",
-        "ctransid": None}
+        "ctransid": None,}
 
 INTS = {"id": "Subvolume ID",
         "parent_id": "Parent ID",
-        "dir_id": None,
-        "flags": "Flags"}
+        "flags": "Flags",
+        "dir_id": None,}
 
 OTHER = {"name": "Name",
-         "path": "Path"}
+         "path": "Path",}
 
 BTRDICT = {v:k for k,v in (UUIDS | TIMES | GENS | INTS | OTHER).items() if v}
 BASE = {k:v for k,v in BTRDICT.items() if v in ("name","id","uuid")}
