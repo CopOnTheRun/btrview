@@ -53,9 +53,10 @@ class BaseInfo:
         bi = BaseInfo(suuid, uuid.int, uuid)
         return bi
 
-    def __getitem__(self, key):
-        if key in BASE:
-            return getattr(self, BTRDICT[key])
+    def __getitem__(self, key: str):
+        attr = BTRDICT.get(key)
+        if attr in self.__dataclass_fields__:
+            return getattr(self, attr)
         else:
             return None
 
@@ -107,12 +108,3 @@ class TypedInfo(BaseInfo):
             return int(value)
         else:
             raise KeyError(f"{key = } can't be cast")
-
-    def __getitem__(self, key: str):
-        if key in BTRDICT:
-            return getattr(self, BTRDICT[key])
-        else:
-            #returns None instead of raising an error
-            #makes it slightly easier to use with Subvolume
-            return None 
-
