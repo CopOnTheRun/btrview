@@ -43,17 +43,21 @@ class Generation:
 
 @dataclass(frozen=True)
 class BaseInfo:
+    """Base class for TypedInfo, mainly used to facilitate creating
+    subvolume and snapshot trees for subvolumes not on the filesystem"""
     name: str
     id: int
     uuid: UUID
 
     @classmethod
     def from_deleted(cls, suuid: str) -> "BaseInfo":
+        """Returns a BaseInfo instance from a uuid"""
         uuid = UUID(suuid)
         bi = BaseInfo(suuid, uuid.int, uuid)
         return bi
 
     def __getitem__(self, key: str):
+        """Returns the attribute corresponding to the key in BTRDICT"""
         attr = BTRDICT.get(key)
         if attr in self.__dataclass_fields__:
             return getattr(self, attr)
@@ -84,6 +88,7 @@ class TypedInfo(BaseInfo):
 
     @classmethod
     def from_info(cls, path: str, info: SubvolumeInfo):
+        """Returns a TypeInfo instance from a SubvolumeInfo instance"""
         kw_args = {}
         kw_args["path"] = PurePath("/" + path)
         kw_args["name"] = kw_args["path"].name or "<FS_TREE>"
