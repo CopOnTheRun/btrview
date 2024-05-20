@@ -5,12 +5,15 @@ from pathlib import Path
 from os import geteuid
 from pwd import getpwuid
 
-def check_root() -> None:
+def is_root() -> bool:
     """Check to see if the current process is running as root. If not, let the user know."""
     euid = geteuid()
-    name = getpwuid(euid).pw_name
+    return euid == 0
+
+def check_root() -> None:
+    """Print warning message if user is not running program as root."""
     message = f"""WARNING: You're current running this script as user {name}.\nIf you have problems, try rerunning this script with sudo, or as the root user."""
-    if euid != 0:
+    if not is_root():
         print(message)
 
 def run(command: str, **kwargs) -> subprocess.CompletedProcess[str]:
