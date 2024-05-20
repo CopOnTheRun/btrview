@@ -51,7 +51,7 @@ class Btrfs:
     _all_mounts: defaultdict[str,set[Mount]] = defaultdict(set)
 
     def __init__(self, uuid: str, label: str|None = None) -> None:
-        """Initialist with the filesystem uuid, and label if it exists."""
+        """Initialize with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
         self.label = label
         if not self._UUIDs:
