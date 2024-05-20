@@ -22,15 +22,14 @@ GENS = {"generation": "Generation",
         "stransid": "Send transid",
         "ctransid": None,}
 
-INTS = {"id": "Subvolume ID",
+NONCAST = {"id": "Subvolume ID",
         "parent_id": "Parent ID",
         "flags": "Flags",
-        "dir_id": None,}
+        "dir_id": None,
+        "name": "Name",
+        "path": "Path",}
 
-OTHER = {"name": "Name",
-         "path": "Path",}
-
-BTRDICT = {v:k for k,v in (UUIDS | TIMES | GENS | INTS | OTHER).items() if v}
+BTRDICT = {v:k for k,v in (UUIDS | TIMES | GENS | NONCAST).items() if v}
 BASE = {k:v for k,v in BTRDICT.items() if v in ("name","id","uuid")}
 
 @dataclass
@@ -109,7 +108,7 @@ class TypedInfo(BaseInfo):
             return UUID(value) if value != "0"*32 else None
         elif key in GENS:
             return Generation(value) if value else None
-        elif key in INTS:
-            return int(value)
+        elif key in NONCAST:
+            return value
         else:
             raise KeyError(f"{key = } can't be cast")
