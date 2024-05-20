@@ -25,13 +25,3 @@ def run(command: str, **kwargs) -> subprocess.CompletedProcess[str]:
     except subprocess.CalledProcessError as e:
         raise e
     return out
-
-def get_UUIDs(path: Path) -> set[str]:
-    """Return a set of UUIDs on a BTRFS filesystem"""
-    UUIDs: set[str] = set()
-    out = run(f"btrfs subvolume list -u '{path}'")
-    for line in out.stdout.splitlines():
-        words = line.split()
-        uuid = words[words.index("uuid") + 1]
-        UUIDs.add(uuid)
-    return UUIDs
