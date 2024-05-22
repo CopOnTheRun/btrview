@@ -1,4 +1,5 @@
 """Classes and constants to aid in casting SubvolumeInfo objects."""
+from __future__ import annotations
 from pathlib import PurePath
 from typing import Self
 from datetime import datetime
@@ -49,7 +50,7 @@ class BaseInfo:
     uuid: UUID
 
     @classmethod
-    def from_deleted(cls, suuid: str) -> "BaseInfo":
+    def from_deleted(cls, suuid: str) -> BaseInfo:
         """Returns a BaseInfo instance from a uuid"""
         uuid = UUID(suuid)
         bi = BaseInfo(suuid, uuid.int, uuid)
