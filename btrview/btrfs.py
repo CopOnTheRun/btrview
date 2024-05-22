@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Self, Callable, TypeAlias, Iterable
+from dataclasses import dataclass
 
 from treelib import Tree
 import btrfsutil
@@ -47,38 +48,15 @@ class SubvolumeSieve:
     
 class Btrfs:
     """A class representing a btrfs filesystem"""
-    _UUIDs:  dict[str,str] = dict()
-    _all_mounts: defaultdict[str,set[Mount]] = defaultdict(set)
-
-    def __init__(self, uuid: str, label: str|None = None) -> None:
+    def __init__(self, uuid: str, 
+                 mounts: tuple[Mount, ...],
+                 label: str|None = None,
+                 subvolumes: list[Subvolume] | None = None) -> None:
         """Initialize with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
+        self.mounts = mounts
         self.label = label
-        if not self._UUIDs:
-            self._get_mounts()
-
-    @classmethod
-    def _get_mounts(cls) -> None:
-        """Generates all the mount points for each filesystem"""
-        headings = "label,uuid,fsroot,target"
-        #Why parse all mounts instead of just one using the --source flag?
-        #Some of the FSes weren't showing up for some reason with that flag. Also
-        #it would mean running the command for every FS. Unfortunately if this 
-        #method isn't run, then self.mounts will incorrectly return an empty list.
-        cmd = f"findmnt --list --json --types btrfs --output {headings}"
-        out = run(cmd)
-        for j in json.loads(out.stdout)["filesystems"]:
-            uuid = j['uuid']
-            mount = Mount(PurePath(j["fsroot"]),Path(j["target"]))
-            cls._all_mounts[uuid].add(mount)
-            cls._UUIDs[j["uuid"]] = j["label"]
-
-    @property
-    def mounts(self) -> tuple[Mount,...]:
-        """Returns the mounts for a certain filesystem as a tuple."""
-        #cast to tuple makes for easier referencing, also has the benefit of
-        #preventing direct access to the set object
-        return tuple(self._all_mounts[self.uuid])
+        self._subvolumes = subvolumes
 
     @property
     def default_subvolume(self) -> str:
@@ -86,19 +64,6 @@ class Btrfs:
         mount = self.mounts[0]
         default = btrfsutil.get_default_subvolume(mount.target)
         return str(default)
-
-    @classmethod
-    def get_filesystems(cls, labels:list[str] | None = None) -> list[Self]:
-        """Returns a list of each filesystem on the system."""
-        #had to be here in case nothing gets initialized
-        if not cls._UUIDs:
-            cls._get_mounts() 
-        filesystems = []
-        for uuid,label in cls._UUIDs.items():
-            if not labels or (label in labels):
-                fs = cls(uuid,label)
-                filesystems.append(fs)
-        return filesystems
 
     @classmethod
     def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
@@ -120,12 +85,15 @@ class Btrfs:
 
     def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
-        mount_point = self.mounts[0].target 
-        subvols = [Subvolume.from_ID(mount_point, 5, self.mounts)]
-        subvols.extend(self._subvol_info_iter())
-        subvols.extend(self._get_deleted_subvols(subvols))
+        if not self._subvolumes:
+            mount_point = self.mounts[0].target
+            subvols = [Subvolume.from_ID(mount_point, 5, self.mounts)]
+            subvols.extend(self._subvol_info_iter())
+            subvols.extend(self._get_deleted_subvols(subvols))
+        else:
+            subvols = self._subvolumes
+            #mainly for testing purposes, so that I can easily pass in a list of subvolumes
         sieve = SubvolumeSieve(subvols)
-
         return sieve.sieve_str(remove)
 
     def forest(self, snapshots: bool, remove: tuple[str, ...]) -> list[Tree]:
@@ -149,6 +117,38 @@ class Btrfs:
             if e.btrfsutilerror == btrfsutil.ERROR_NOT_BTRFS:
                 return False
         return True
+
+@dataclass
+class System:
+    filesystems: list[Btrfs]
+
+    @classmethod
+    def _get_fs(cls) -> list[Btrfs]:
+        """Generates all the mount points for each filesystem"""
+        headings = "label,uuid,fsroot,target"
+        cmd = f"findmnt --list --json --types btrfs --output {headings}"
+        out = run(cmd)
+        uuid_labels = {}
+        uuid_mounts  = defaultdict(set)
+        for j in json.loads(out.stdout)["filesystems"]:
+            uuid = j['uuid']
+            mount = Mount(PurePath(j["fsroot"]), Path(j["target"]))
+            uuid_mounts[uuid].add(mount)
+            uuid_labels[j["uuid"]] = j["label"]
+        filesystems = []
+        for uuid in uuid_labels:
+            fs = Btrfs(uuid,tuple(uuid_mounts[uuid]),uuid_labels[uuid])
+            filesystems.append(fs)
+        return filesystems
+
+    @classmethod
+    def from_findmt(cls, labels:list[str] | None = None) -> Self:
+        """Returns a list of each filesystem on the system."""
+        filesystems = cls._get_fs()
+        if labels:
+            filesystems = [fs for fs in filesystems if fs.label in labels]
+        return cls(filesystems)
+
 
 def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
