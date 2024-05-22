@@ -121,7 +121,7 @@ class Btrfs:
     def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
         """Return a list of subvolumes on the file system"""
         mount_point = self.mounts[0].target 
-        subvols = [] if "root" in remove else [Subvolume.from_ID(mount_point,5, self.mounts)]
+        subvols = [Subvolume.from_ID(mount_point, 5, self.mounts)]
         subvols.extend(self._subvol_info_iter())
         subvols.extend(self._get_deleted_subvols(subvols))
         sieve = SubvolumeSieve(subvols)
