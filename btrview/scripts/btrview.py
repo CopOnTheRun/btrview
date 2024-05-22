@@ -3,8 +3,8 @@ import argparse
 
 import btrview
 from btrview.utils import check_root
-from btrview.rich_output import logic,SORT_FUNCS
-from btrview.btrfs import SubvolumeSieve
+from btrview.rich_output import logic, SORT_FUNCS
+from btrview.subvolume import SubvolumeSieve
 
 def parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the command line arguments"""

@@ -2,7 +2,7 @@
 import json
 from collections import defaultdict
 from pathlib import Path, PurePath
-from typing import Self, Callable, TypeAlias, Iterable
+from typing import Self
 from dataclasses import dataclass
 
 from treelib import Tree
@@ -11,45 +11,29 @@ import btrfsutil
 import btrview.subvolume as sv
 from btrview.utils import run
 
-Sieve: TypeAlias = Callable[[sv.Subvolume], bool]
+@dataclass(frozen=True)
+class Mount:
+    """Basic class for working with mounted subvolumes."""
+    fsroot: PurePath
+    target: Path
 
-class SubvolumeSieve:
-    """A class for sieving subvolumes"""
-    SIEVES: dict[str, Sieve] = {
-            "deleted": lambda s: s.deleted,
-            "root": lambda s: s.root_subvolume,
-            "snapshot": lambda s: s.snapshot and not s.root_subvolume,
-            "unreachable": lambda s: not (s.mounted or s.deleted),
-            "non-mounts": lambda s: not s.mount_points
-            }
+    def resolve(self, path: PurePath) -> Path:
+        """Returns the resolved path of another path"""
+        fsroot_str = str(self.fsroot)
+        target_str = str(self.target)
+        if fsroot_str == "/":
+            target_str = target_str + "/"
+        path_str = str(path)
+        new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
+        return Path(new_path)
 
-    def __init__(self, subvolumes: list[sv.Subvolume]) -> None:
-        self.subvolumes = subvolumes
-
-    def sieve_str(self, string_sieves: Iterable[str]):
-        """Removes subvolumes from a list based on string"""
-        sieves = [self.SIEVES[s] for s in string_sieves]
-        return self.sieve(sieves)
-
-    def sieve(self, remove_funcs: Iterable[Sieve]) -> list[sv.Subvolume]:
-        """Remove subvolumes from a list determined by an iterable of sieve functions"""
-        to_remove = []
-        for subvol in self.subvolumes:
-            #if any of them evaluate True, then remove
-            bools = [f(subvol) for f in remove_funcs]
-            remove = any(bools)
-            if remove:
-                #don't want to remove in place while iterating
-                to_remove.append(subvol)
-        copy = self.subvolumes.copy()
-        for subvol in to_remove:
-            copy.remove(subvol)
-        return copy
+    def __str__(self) -> str:
+        return f"{self.fsroot} on {self.target}"
     
 class Btrfs:
     """A class representing a btrfs filesystem"""
     def __init__(self, uuid: str, 
-                 mounts: tuple[sv.Mount, ...],
+                 mounts: tuple[Mount, ...],
                  label: str|None = None,
                  subvolumes: list[sv.Subvolume] | None = None) -> None:
         """Initialize with the filesystem uuid, and label if it exists."""
@@ -92,7 +76,7 @@ class Btrfs:
         else:
             subvols = self._subvolumes
             #mainly for testing purposes, so that I can easily pass in a list of subvolumes
-        sieve = SubvolumeSieve(subvols)
+        sieve = sv.SubvolumeSieve(subvols)
         return sieve.sieve_str(remove)
 
     def forest(self, snapshots: bool, remove: tuple[str, ...]) -> list[Tree]:
@@ -131,7 +115,7 @@ class System:
         uuid_mounts  = defaultdict(set)
         for j in json.loads(out.stdout)["filesystems"]:
             uuid = j['uuid']
-            mount = sv.Mount(PurePath(j["fsroot"]), Path(j["target"]))
+            mount = Mount(PurePath(j["fsroot"]), Path(j["target"]))
             uuid_mounts[uuid].add(mount)
             uuid_labels[j["uuid"]] = j["label"]
         filesystems = []

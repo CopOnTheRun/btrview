@@ -1,8 +1,7 @@
 """Subvolume Classes and errors."""
 from __future__ import annotations
-from pathlib import Path, PurePath
-from typing import Self
-from dataclasses import dataclass
+from pathlib import Path
+from typing import Self, TypeAlias, Callable, Iterable
 
 from btrfsutil import SubvolumeInfo, subvolume_info, subvolume_path
 from btrview.typed_info import BaseInfo, TypedInfo, BTRDICT, BASE
@@ -10,25 +9,6 @@ import btrview.btrfs as btrfs
 
 class NotASubvolumeError(NotADirectoryError):
     """Throw when a directory isn't a subvolume"""
-
-@dataclass(frozen=True)
-class Mount:
-    """Basic class for working with mounted subvolumes."""
-    fsroot: PurePath
-    target: Path
-
-    def resolve(self, path: PurePath) -> Path:
-        """Returns the resolved path of another path"""
-        fsroot_str = str(self.fsroot)
-        target_str = str(self.target)
-        if fsroot_str == "/":
-            target_str = target_str + "/"
-        path_str = str(path)
-        new_path = path_str.replace(fsroot_str,target_str,1).replace("//","/",1)
-        return Path(new_path)
-
-    def __str__(self) -> str:
-        return f"{self.fsroot} on {self.target}"
 
 class Subvolume:
     """Class representing a btrfs subvolume"""
@@ -136,4 +116,37 @@ class Subvolume:
     def __eq__(self, other) -> bool:
         return self["UUID"] == other["UUID"]
 
+class SubvolumeSieve:
+    """A class for sieving subvolumes"""
+    SIEVES: dict[str, Sieve] = {
+            "deleted": lambda s: s.deleted,
+            "root": lambda s: s.root_subvolume,
+            "snapshot": lambda s: s.snapshot and not s.root_subvolume,
+            "unreachable": lambda s: not (s.mounted or s.deleted),
+            "non-mounts": lambda s: not s.mount_points
+            }
 
+    def __init__(self, subvolumes: list[Subvolume]) -> None:
+        self.subvolumes = subvolumes
+
+    def sieve_str(self, string_sieves: Iterable[str]):
+        """Removes subvolumes from a list based on string"""
+        sieves = [self.SIEVES[s] for s in string_sieves]
+        return self.sieve(sieves)
+
+    def sieve(self, remove_funcs: Iterable[Sieve]) -> list[Subvolume]:
+        """Remove subvolumes from a list determined by an iterable of sieve functions"""
+        to_remove = []
+        for subvol in self.subvolumes:
+            #if any of them evaluate True, then remove
+            bools = [f(subvol) for f in remove_funcs]
+            remove = any(bools)
+            if remove:
+                #don't want to remove in place while iterating
+                to_remove.append(subvol)
+        copy = self.subvolumes.copy()
+        for subvol in to_remove:
+            copy.remove(subvol)
+        return copy
+
+Sieve: TypeAlias = Callable[[Subvolume], bool]

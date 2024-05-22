@@ -11,8 +11,8 @@ from rich.table import Table
 from rich.style import Style
 from rich.text import Text
 
-from btrview.btrfs import get_forest, SubvolumeSieve, System
-from btrview.subvolume import Subvolume
+from btrview.btrfs import get_forest, System
+from btrview.subvolume import Subvolume, SubvolumeSieve
 
 TreeSorter = Callable[[treelib.Tree, treelib.Node], Any]
 
