@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from treelib import Tree
 import btrfsutil
 
+import btrview.subvolume as sv
 from btrview.utils import run
-from btrview.subvolume import Subvolume, Mount
 
-Sieve: TypeAlias = Callable[[Subvolume], bool]
+Sieve: TypeAlias = Callable[[sv.Subvolume], bool]
 
 class SubvolumeSieve:
     """A class for sieving subvolumes"""
@@ -23,7 +23,7 @@ class SubvolumeSieve:
             "non-mounts": lambda s: not s.mount_points
             }
 
-    def __init__(self, subvolumes: list[Subvolume]) -> None:
+    def __init__(self, subvolumes: list[sv.Subvolume]) -> None:
         self.subvolumes = subvolumes
 
     def sieve_str(self, string_sieves: Iterable[str]):
@@ -31,7 +31,7 @@ class SubvolumeSieve:
         sieves = [self.SIEVES[s] for s in string_sieves]
         return self.sieve(sieves)
 
-    def sieve(self, remove_funcs: Iterable[Sieve]) -> list[Subvolume]:
+    def sieve(self, remove_funcs: Iterable[Sieve]) -> list[sv.Subvolume]:
         """Remove subvolumes from a list determined by an iterable of sieve functions"""
         to_remove = []
         for subvol in self.subvolumes:
@@ -49,9 +49,9 @@ class SubvolumeSieve:
 class Btrfs:
     """A class representing a btrfs filesystem"""
     def __init__(self, uuid: str, 
-                 mounts: tuple[Mount, ...],
+                 mounts: tuple[sv.Mount, ...],
                  label: str|None = None,
-                 subvolumes: list[Subvolume] | None = None) -> None:
+                 subvolumes: list[sv.Subvolume] | None = None) -> None:
         """Initialize with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
         self.mounts = mounts
@@ -65,29 +65,28 @@ class Btrfs:
         default = btrfsutil.get_default_subvolume(mount.target)
         return str(default)
 
-    @classmethod
-    def _get_deleted_subvols(cls, subvols: list[Subvolume]) -> list[Subvolume]:
+    def _get_deleted_subvols(self, subvols: list[sv.Subvolume]) -> list[sv.Subvolume]:
         """Returns a list of deleted subvolumes"""
         uuids: set[str] = {s.id("snap") for s in subvols}
         puuids: set[str | None] = {s.parent("snap") for s in subvols if s.parent("snap")}
         deleted_puuids = puuids - uuids
-        deleted_subvols = [Subvolume.from_deleted(puuid) for puuid in deleted_puuids]
+        deleted_subvols = [sv.Subvolume.from_deleted(puuid, self) for puuid in deleted_puuids]
         return deleted_subvols
 
-    def _subvol_info_iter(self,) -> list[Subvolume]:
+    def _subvol_info_iter(self,) -> list[sv.Subvolume]:
         """Returns a list of subvolume from a SubvolumeIterator"""
         subvol_iter = btrfsutil.SubvolumeIterator(self.mounts[0].target,info = True, top=5)
         subvols = []
         for path, info in subvol_iter:
-            subvol = Subvolume.from_info(path, info, self.mounts)
+            subvol = sv.Subvolume.from_info(path, info, self)
             subvols.append(subvol)
         return subvols
 
-    def subvolumes(self, remove: tuple[str, ...]) -> list[Subvolume]:
+    def subvolumes(self, remove: tuple[str, ...]) -> list[sv.Subvolume]:
         """Return a list of subvolumes on the file system"""
         if not self._subvolumes:
             mount_point = self.mounts[0].target
-            subvols = [Subvolume.from_ID(mount_point, 5, self.mounts)]
+            subvols = [sv.Subvolume.from_ID(mount_point, 5, self)]
             subvols.extend(self._subvol_info_iter())
             subvols.extend(self._get_deleted_subvols(subvols))
         else:
@@ -132,7 +131,7 @@ class System:
         uuid_mounts  = defaultdict(set)
         for j in json.loads(out.stdout)["filesystems"]:
             uuid = j['uuid']
-            mount = Mount(PurePath(j["fsroot"]), Path(j["target"]))
+            mount = sv.Mount(PurePath(j["fsroot"]), Path(j["target"]))
             uuid_mounts[uuid].add(mount)
             uuid_labels[j["uuid"]] = j["label"]
         filesystems = []
@@ -149,8 +148,7 @@ class System:
             filesystems = [fs for fs in filesystems if fs.label in labels]
         return cls(filesystems)
 
-
-def subvol_in_list(ID: str, subvolumes: list[Subvolume], kind = "subvol") -> Subvolume | None:
+def subvol_in_list(ID: str, subvolumes: list[sv.Subvolume], kind = "subvol") -> sv.Subvolume | None:
     """Returns a subvolume from a list if there, else returns None."""
     for subvolume in subvolumes:
         if subvolume.id(kind) == ID:
@@ -164,7 +162,7 @@ def subvol_in_forest(ID: str, trees:list[Tree]) -> Tree | None:
             return tree
     return None
 
-def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], kind: str = "subvol") -> Tree:
+def get_tree(subvol: sv.Subvolume, subvolumes: list[sv.Subvolume], trees: list[Tree], kind: str = "subvol") -> Tree:
     """Adds the node corresponding the the subvolume UUID/ID to the tree. If the tree
     doesn't exist, it will recursively find the root and add all corresponding nodes."""
     subvolumes.remove(subvol)
@@ -182,7 +180,7 @@ def get_tree(subvol: Subvolume, subvolumes: list[Subvolume], trees: list[Tree], 
         tree.create_node(name, subvol_id, data=subvol)
     return tree
 
-def get_forest(subvolumes: list[Subvolume], kind = "subvol") -> list[Tree]:
+def get_forest(subvolumes: list[sv.Subvolume], kind = "subvol") -> list[Tree]:
     """Turns a flat list of subvolumes into a forest of trees."""
     trees: list[Tree] = []
     subvolumes = subvolumes.copy()
