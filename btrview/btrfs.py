@@ -9,7 +9,7 @@ from treelib import Tree
 import btrfsutil
 
 import btrview.subvolume as sv
-from btrview.utils import run
+import btrview.utils as utils
 
 @dataclass(frozen=True)
 class Mount:
@@ -108,19 +108,17 @@ class System:
     @classmethod
     def _get_fs(cls) -> list[Btrfs]:
         """Generates all the mount points for each filesystem"""
-        headings = "label,uuid,fsroot,target"
-        cmd = f"findmnt --list --json --types btrfs --output {headings}"
-        out = run(cmd)
+        json_fs = utils.parse_findmnt()
         uuid_labels = {}
         uuid_mounts  = defaultdict(set)
-        for j in json.loads(out.stdout)["filesystems"]:
+        for j in json_fs:
             uuid = j['uuid']
             mount = Mount(PurePath(j["fsroot"]), Path(j["target"]))
             uuid_mounts[uuid].add(mount)
             uuid_labels[j["uuid"]] = j["label"]
         filesystems = []
         for uuid in uuid_labels:
-            fs = Btrfs(uuid,tuple(uuid_mounts[uuid]),uuid_labels[uuid])
+            fs = Btrfs(uuid, tuple(uuid_mounts[uuid]), uuid_labels[uuid])
             filesystems.append(fs)
         return filesystems
 
