@@ -11,8 +11,8 @@ from rich.table import Table
 from rich.style import Style
 from rich.text import Text
 
-from btrview.btrfs import Btrfs, get_forest, SubvolumeSieve
-from btrview.subvolume import Subvolume
+from btrview.btrfs import get_forest, System
+from btrview.subvolume import Subvolume, SubvolumeSieve
 
 TreeSorter = Callable[[treelib.Tree, treelib.Node], Any]
 
@@ -134,7 +134,7 @@ class RichTreeTable:
 def logic(labels: list[str], remove: tuple[str,...], prop: str, 
           fold: int, export: str, sort_func:TreeSorter, reverse: bool) -> str:
     """Constructs Rich output based on the parameters given."""
-    filesystems = Btrfs.get_filesystems(labels)
+    filesystems = System.from_findmt(labels).filesystems
     tables = []
     for fs in filesystems:
         subvols = fs.subvolumes(remove)
