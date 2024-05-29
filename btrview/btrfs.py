@@ -1,5 +1,4 @@
 """Classes and functions to interact with a btrfs filesystem."""
-import json
 from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Self
@@ -34,11 +33,15 @@ class Btrfs:
     """A class representing a btrfs filesystem"""
     def __init__(self, uuid: str, 
                  mounts: tuple[Mount, ...],
+                 size: int,
+                 used: int,
                  label: str|None = None,
                  subvolumes: list[sv.Subvolume] | None = None) -> None:
         """Initialize with the filesystem uuid, and label if it exists."""
         self.uuid = uuid
         self.mounts = mounts
+        self.size = size
+        self.used = used
         self.label = label
         self._subvolumes = subvolumes
 
@@ -118,12 +121,16 @@ class System:
             uuid_labels[j["uuid"]] = j["label"]
         filesystems = []
         for uuid in uuid_labels:
-            fs = Btrfs(uuid, tuple(uuid_mounts[uuid]), uuid_labels[uuid])
+            mounts = tuple(uuid_mounts[uuid])
+            fs_usage = utils.parse_fs_usage(mounts[0].target)
+            size = fs_usage["Device size"]
+            used = fs_usage["Used"]
+            fs = Btrfs(uuid, mounts, size ,used, uuid_labels[uuid])
             filesystems.append(fs)
         return filesystems
 
     @classmethod
-    def from_findmnt(cls, labels:list[str] | None = None) -> Self:
+    def from_fs(cls, labels:list[str] | None = None) -> Self:
         """Returns a list of each filesystem on the system."""
         filesystems = cls._get_fs()
         if labels:

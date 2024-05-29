@@ -1,5 +1,6 @@
 """Some generic utilties to help with the module."""
 import json
+from pathlib import Path
 import subprocess
 import shlex
 from os import geteuid
@@ -14,6 +15,29 @@ def check_root() -> None:
     message = f"""WARNING: You're not current running this script as the root user.\nIf you have problems, try rerunning this script with sudo, or as the root user."""
     if not is_root():
         print(message)
+
+def parse_fs_usage(path: Path) -> dict[str,int]:
+    cmd = f"btrfs filesystem usage {path}"
+    out = run(cmd)
+    keys = "Device size,Used".split(",")
+    fs_info = {}
+    for line in out.stdout.splitlines()[:14]:
+        if ":" not in line:
+            continue
+        key, val = line.split(":",maxsplit=1)
+        key,val = key.strip(), val.strip()
+        if val and key in keys:
+            fs_info[key] = ebi_to_num(val.strip())
+    return fs_info
+
+def ebi_to_num(string: str) -> int:
+    #I wonder if I'll ever have to add another entry
+    conv = {"KiB":1,"MiB":2,"GiB":3,"TiB":4,"PiB":5}
+    for suffix,val in conv.items():
+        if suffix in string:
+            return int(float(string.removesuffix(suffix))*1024**val)
+    else:
+        raise ValueError("String string doesn't contain a ibi-byte")
 
 def parse_findmnt() -> list[dict[str,str]]:
     headings = "label,uuid,fsroot,target,fstype"

@@ -134,7 +134,7 @@ class RichTreeTable:
 def logic(labels: list[str], remove: tuple[str,...], prop: str, 
           fold: int, export: str, sort_func:TreeSorter, reverse: bool) -> str:
     """Constructs Rich output based on the parameters given."""
-    filesystems = System.from_findmnt(labels).filesystems
+    filesystems = System.from_fs(labels).filesystems
     tables = []
     for fs in filesystems:
         subvols = fs.subvolumes(remove)
