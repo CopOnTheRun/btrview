@@ -89,7 +89,8 @@ class Btrfs:
         return get_forest(self.subvolumes(remove), kind)
         
     def __str__(self) -> str:
-        return f"{self.label or self.uuid}"
+        percent = f"{self.used/self.size:.0%}"
+        return f"{self.label or self.uuid} | {percent} full"
 
     @staticmethod
     def is_btrfs(path: Path | str) -> bool:
