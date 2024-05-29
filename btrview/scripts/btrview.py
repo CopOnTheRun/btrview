@@ -53,8 +53,8 @@ def parser() -> argparse.ArgumentParser:
     return arg_parser
 
 def main():
-    check_root()
     args = parser().parse_args()
+    check_root()
     output = logic(args.labels, args.exclude, args.property, 
                    args.fold, args.export, SORT_FUNCS[args.sort], not args.ascending)
     print(output)
