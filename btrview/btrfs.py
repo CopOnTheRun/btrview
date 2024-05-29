@@ -123,7 +123,7 @@ class System:
         return filesystems
 
     @classmethod
-    def from_findmt(cls, labels:list[str] | None = None) -> Self:
+    def from_findmnt(cls, labels:list[str] | None = None) -> Self:
         """Returns a list of each filesystem on the system."""
         filesystems = cls._get_fs()
         if labels:
