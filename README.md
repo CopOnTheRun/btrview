@@ -16,14 +16,22 @@ Wondering what the difference between the subvolume and snapshot tree is? [Check
 ## Installation:
 
 Btrview relies on the following dependencies:
-* python 3.11 or greater
-* btrfs-progs
-* python-treelib
-* python-rich
+* [python 3.11 or greater](https://www.python.org/)
+* [findmnt](https://man7.org/linux/man-pages/man8/findmnt.8.html) (should be installed by default on most distributions)
+* [btrfs-progs](https://github.com/kdave/btrfs-progs/tree/master)
+* [python-btrfsutil](https://github.com/kdave/btrfs-progs/tree/master/libbtrfsutil) (might be included with btrfs progs)
+* [python-treelib](https://treelib.readthedocs.io/en/latest/)
+* [python-rich](https://rich.readthedocs.io/en/stable/introduction.html)
 
-The easiest way to download btrview is to use [pipx](https://pipx.pypa.io/stable/installation/) to download it from the python package index. Use the command `pipx install --system-site-packages btrview`. Using pipx to install btrview will also install the required python dependencies and add the `btrview` command to your path allowing you to run the command from anywhere on the system.
+The easiest way to download btrview is to use [pipx](https://pipx.pypa.io/stable/installation/) to download it from the python package index. Use the command `pipx install --system-site-packages btrview`. Using pipx to install btrview will also install treelib and rich and add the `btrview` command to your path allowing you to run the command from anywhere on the system.
 
 If you don't feel like installing via pipx you can download it via `git clone https://github.com/CopOnTheRun/btrview` then `cd btrview`. From within the btrview directory you can run the script with `python -m btrview`. Note that if you clone the repository you'll need to make sure you have all the dependencies installed already.
+
+### Installation Troubleshooting
+
+Q: How come when I use the sudo command with btrview I get `sudo: btrview: command not found`, but when I run it without sudo the command is recognized?
+
+A: You are likely using a linux distribution which hard codes the paths sudo can use to find executables. There are two options here, you can either comment out the line that contains "secure_path" in `/etc/sudoers` or you can add the path you're using to that variable. The former option will change it so that any executable in the user's path can be executed, the latter option will merely add the user's path to list of allowed paths.
 
 ## Some Qs and As:
 
