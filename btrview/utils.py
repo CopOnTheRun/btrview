@@ -5,6 +5,9 @@ import subprocess
 import shlex
 from os import geteuid
 
+class NoBtrfsError(Exception):
+    "Raise when there isn't a btrfs filesystem on the system"
+
 def is_root() -> bool:
     """Check to see if the current process is running as root. If not, let the user know."""
     euid = geteuid()
@@ -47,6 +50,8 @@ def parse_findmnt() -> list[dict[str,str]]:
     for fs in json.loads(out.stdout)["filesystems"]:
         if fs["fstype"] == "btrfs":
             btrfs_fs.append(fs)
+    if not btrfs_fs:
+        raise NoBtrfsError("No filesystems of type btrfs could be detected.")
     return btrfs_fs
 
 def run(command: str, **kwargs) -> subprocess.CompletedProcess[str]:
