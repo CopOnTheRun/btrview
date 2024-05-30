@@ -37,7 +37,7 @@ def ebi_to_num(string: str) -> int:
         if suffix in string:
             return int(float(string.removesuffix(suffix))*1024**val)
     else:
-        raise ValueError("String string doesn't contain a ibi-byte")
+        raise ValueError(f"String \"{string}\" doesn't contain an ibi-byte")
 
 def parse_findmnt() -> list[dict[str,str]]:
     headings = "label,uuid,fsroot,target,fstype"
